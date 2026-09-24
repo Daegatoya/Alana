@@ -119,6 +119,8 @@ The return type of a function is **NOT** declared. Therefore, it's up to you to 
 Here is are some quick codes in .alana:
 
 ### *Basic arithmetic and variables/functions*
+<details>
+    
 ```txt
 define num x is 10#
 define decimal y is 3.3#
@@ -131,7 +133,12 @@ define decimal z is call division(x, y)#
 show z#
 ```
 
+    
+</details>
+
 ### *Playing with all type of variables*
+<details>
+    
 ```txt
 define str x is "Hello"#
 define schar c is '3'#
@@ -144,7 +151,11 @@ show c#
 show y#
 ```
 
+</details>
+
 ### *Complex code using local variables, scopes, calls, definitions, etc.*
+<details>
+    
 ```txt
 define num base is 10#
 define decimal multiplier is 2.5#
@@ -193,6 +204,8 @@ show reportResult#
 show call process(50)#
 ```
 
+</details>
+
 <hr>
 
 ## So what's next?
@@ -206,3 +219,5 @@ Finally, I will create a full on installer so you can try the language at home w
 I hope this little project found your heart, and I will keep you guys updated! Thank you for following my work!
 
 *And don't forget to ⭐ the repo!*
+
+> Copyright © Daegatoya - 2026
