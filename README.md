@@ -116,7 +116,7 @@ The return type of a function is **NOT** declared. Therefore, it's up to you to 
 
 **Right here friends!**
 
-Here is are some quick codes in .alana:
+Here are some quick codes in .alana:
 
 ### *Basic arithmetic and variables/functions*
 <details>
