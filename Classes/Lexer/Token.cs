@@ -18,6 +18,21 @@ public enum Type
     MULTI,
     DIVIDE,
     STR,
+    COMA,
+    OPEN,
+    CLOSE,
+    EXITFUNC,
+    DEFFUNC,
+    RETURN,
+    OPENCLOSESTR,
+    STRING,
+    CALL,
+    BOOL,
+    DECIMAL,
+    CHAR,
+    DECIMAL_NUM,
+    BOOL_C,
+    OPENCLOSECHAR,
 }
 
 namespace Classes.Lexer

@@ -1,8 +1,10 @@
 ﻿using Classes.AST;
 using Classes.AST.Expressions;
+using Classes.AST.Models;
 using Classes.Lexer;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -58,6 +60,12 @@ namespace Classes.Parser
 
         public Statement? ParseStatement()
         {
+            if (tokens[pos].type == Type.CALL)
+            {
+                FuncCall call = ParseFuncCall();
+                Use(Type.END);
+                return new CallStatement(call);
+            }
             if (tokens[pos].type == Type.DEFINE && tokens[pos+1].type == Type.NUM)
             {
                 return ParseNumVariable();
@@ -68,12 +76,67 @@ namespace Classes.Parser
                 return ParseStrVariable();
             }
 
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.BOOL)
+            {
+                return ParseBoolVariable();
+            }
+
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DECIMAL)
+            {
+                return ParseDecimalVariable();
+            }
+
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.CHAR)
+            {
+                return ParseCharVariable();
+            }
+
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
+            {
+                return ParseFunction();
+            }
+
             if (tokens[pos].type == Type.SHOW)
             {
                 return ParseShow();
             }
 
+            if (tokens[pos].type == Type.RETURN)
+            {
+                return ParseReturn();
+            }
             throw new Exception($"Unexpected token: {tokens[pos].type}");
+        }
+
+        public FuncCall ParseFuncCall()
+        {
+            List<Expression> expressions = new();
+
+            Use(Type.CALL);
+            Token name = Use(Type.VAR);
+            Use(Type.OPEN);
+
+            while (tokens[pos].type != Type.CLOSE)
+            {
+                expressions.Add(ParseExpression());
+
+                if (tokens[pos].type != Type.CLOSE)
+                {
+                    Use(Type.COMA);
+                }
+            }
+
+            Use(Type.CLOSE);
+
+            return new FuncCall(name.value!, expressions);
+        }
+        public ReturnStatement ParseReturn()
+        {
+            Use(Type.RETURN);
+            Expression? expression = ParseExpression();
+            Use(Type.END);
+            return new ReturnStatement(expression);
+
         }
         public DefineVar ParseNumVariable()
         {
@@ -81,10 +144,46 @@ namespace Classes.Parser
             Use(Type.NUM);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Token value = Use(Type.DIGIT);
+            Expression value = ParseExpression();
             Use(Type.END);
 
-            return new DefineVar(name.value!, VarType.NUM, int.Parse(value.value!));
+            return new DefineVar(name.value!, VarType.NUM, value);
+        }
+
+        public DefineVar ParseDecimalVariable()
+        {
+            Use(Type.DEFINE);
+            Use(Type.DECIMAL);
+            Token name = Use(Type.VAR);
+            Use(Type.EQUAL);
+            Expression value = ParseExpression();
+            Use(Type.END);
+
+            return new DefineVar(name.value!, VarType.DECIMAL, value);
+        }
+
+        public DefineVar ParseBoolVariable()
+        {
+            Use(Type.DEFINE);
+            Use(Type.BOOL);
+            Token name = Use(Type.VAR);
+            Use(Type.EQUAL);
+            Expression value = ParseExpression();
+            Use(Type.END);
+
+            return new DefineVar(name.value!, VarType.BOOL, value);
+        }
+
+        public DefineVar ParseCharVariable()
+        {
+            Use(Type.DEFINE);
+            Use(Type.CHAR);
+            Token name = Use(Type.VAR);
+            Use(Type.EQUAL);
+            Expression value = ParseExpression();
+            Use(Type.END);
+
+            return new DefineVar(name.value!, VarType.CHAR, value);
         }
 
         public DefineVar ParseStrVariable()
@@ -93,10 +192,50 @@ namespace Classes.Parser
             Use(Type.STR);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Token value = Use(Type.VAR);
+            Expression value = ParseExpression();
             Use(Type.END);
 
-            return new DefineVar(name.value!, VarType.STR, value.value!);
+            return new DefineVar(name.value!, VarType.STR, value);
+        }
+
+        public DefFunction ParseFunction()
+        {
+            List<Statement> body = new();
+            List<Param> @params = new();
+            Use(Type.DEFINE);
+            Use(Type.DEFFUNC);
+            Token name = Use(Type.VAR);
+            Use(Type.OPEN);
+            while (tokens[pos].type != Type.CLOSE)
+            {
+                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL);
+                Token name_Param = Use(Type.VAR);
+                VarType type_Parsed = type_Param.type switch
+                {
+                    Type.NUM => VarType.NUM,
+                    Type.STR => VarType.STR,
+                    Type.CHAR => VarType.CHAR,
+                    Type.DECIMAL => VarType.DECIMAL,
+                    Type.BOOL => VarType.BOOL,
+                    _ => throw new Exception($"Invalid type parsed for parameter {name_Param.value}")
+                };
+                @params.Add(new Param(name_Param.value!, type_Parsed!));
+
+                if (tokens[pos].type != Type.CLOSE)
+                {
+                    Use(Type.COMA);
+                }
+            }
+            Use(Type.CLOSE);
+            while(tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement statement = ParseStatement()!;
+                body.Add(statement);
+            }
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+
+            return new DefFunction(name.value!, @params, body);
         }
 
         public Statement ParseShow()
@@ -108,13 +247,47 @@ namespace Classes.Parser
             return new Show(expression);
         }
 
+
         private Expression ParseValue()
         {
-            Token token = Use(Type.VAR, Type.DIGIT);
+            if (tokens[pos].type == Type.OPENCLOSESTR)
+            {
+                Use(Type.OPENCLOSESTR);
+                Token value = Use(Type.STRING);
+                Use(Type.OPENCLOSESTR);
+
+                return new StringExpression(value.value!);
+            }
+
+            if (tokens[pos].type == Type.OPENCLOSECHAR)
+            {
+                Use(Type.OPENCLOSECHAR);
+                Token value = Use(Type.CHAR);
+                Use(Type.OPENCLOSECHAR);
+
+                return new CharExpression(char.Parse(value.value!));
+            }
+
+            if (tokens[pos].type == Type.CALL)
+            {
+                return ParseFuncCall();
+            }
+
+            Token token = Use(Type.VAR, Type.DIGIT, Type.DECIMAL_NUM);
 
             if (token.type == Type.VAR)
             {
+                if (bool.TryParse(token.value!, out bool boolValue))
+                {
+                    return new BoolExpression(boolValue);
+                }
+
                 return new VarExpression(token.value!);
+            }
+
+            if (token.type == Type.DECIMAL_NUM)
+            {
+                return new DecimalExpression(decimal.Parse(token.value!, CultureInfo.InvariantCulture));
             }
 
             return new NumberExpression(int.Parse(token.value!));
@@ -124,7 +297,7 @@ namespace Classes.Parser
         {
             Expression left = ParseValue();
 
-            while (tokens[pos].type != Type.END)
+            while (tokens[pos].type != Type.END && tokens[pos].type != Type.COMA && tokens[pos].type != Type.CLOSE)
             {
                 Type operation = tokens[pos].type;
                 Use(operation);

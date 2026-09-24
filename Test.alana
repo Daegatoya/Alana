@@ -1,10 +1,5 @@
-﻿define num x is 25#
-define num y is 100#
-define str z is hello#
-show x + 50#
-show x - 10#
-show y + x#
-show y divide x#
-show x times y#
-show x - 2 + 65 - y times 65#
+﻿define num x is 10#
+define num y is 3#
+define decimal z is x divide y#
+
 show z#

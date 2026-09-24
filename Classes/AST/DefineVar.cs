@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Classes.AST.Expressions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,14 +11,17 @@ namespace Classes.AST
     {
         NUM,
         STR,
+        DECIMAL,
+        BOOL,
+        CHAR,
     }
     public class DefineVar : Statement
     {
         public string name = string.Empty;
         public VarType type { get; private set; }
-        public object value = string.Empty;
+        public Expression value;
 
-        public DefineVar(string name, VarType type, object value)
+        public DefineVar(string name, VarType type, Expression value)
         {
             this.name = name;
             this.type = type;
