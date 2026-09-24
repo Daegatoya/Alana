@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37614.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alana", "Alana\Alana.csproj", "{C7D2A92F-C515-4914-B4A7-6373863393F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Classes", "Classes\Classes.csproj", "{2E41CB5A-28BD-45BB-9B71-11E96F56E780}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C7D2A92F-C515-4914-B4A7-6373863393F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7D2A92F-C515-4914-B4A7-6373863393F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7D2A92F-C515-4914-B4A7-6373863393F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7D2A92F-C515-4914-B4A7-6373863393F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E41CB5A-28BD-45BB-9B71-11E96F56E780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E41CB5A-28BD-45BB-9B71-11E96F56E780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E41CB5A-28BD-45BB-9B71-11E96F56E780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E41CB5A-28BD-45BB-9B71-11E96F56E780}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A3FDC662-1242-4E1D-86FE-3B13A96D6D85}
+	EndGlobalSection
+EndGlobal
