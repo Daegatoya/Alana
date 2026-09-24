@@ -204,3 +204,5 @@ Finally, I will create a full on installer so you can try the language at home w
 <hr>
 
 I hope this little project found your heart, and I will keep you guys updated! Thank you for following my work!
+
+*And don't forget to ⭐ the repo!*
