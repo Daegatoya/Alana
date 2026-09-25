@@ -27,10 +27,13 @@ namespace Classes.Lexer
         };
         private string source { get; }
         private int pos = 0;
+        private int line = 1, col = 1;
+        private string[] sources;
 
         public Lexer(string source)
         {
             this.source = source;
+            sources = source.Split('\n');
         }
 
         public Token[] TranslateToken()
@@ -42,37 +45,50 @@ namespace Classes.Lexer
                 if (source[^1] != '#' && source[^1] != ')') throw new Exception("End of line (#) required.");
                 char c = source[pos];
 
+                if(c == '\n')
+                {
+                    line++;
+                    col = 1;
+                    pos++;
+                    continue;
+                }
+
                 if (char.IsWhiteSpace(c))
                 {
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if(c == '#')
                 {
-                    tokens.Add(new Token(Type.END));
+                    tokens.Add(new Token(Type.END, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if (c == ',')
                 {
-                    tokens.Add(new Token(Type.COMA));
+                    tokens.Add(new Token(Type.COMA, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if (c == '(')
                 {
-                    tokens.Add(new Token(Type.OPEN));
+                    tokens.Add(new Token(Type.OPEN, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if (c == ')')
                 {
-                    tokens.Add(new Token(Type.CLOSE));
+                    tokens.Add(new Token(Type.CLOSE, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
@@ -80,54 +96,63 @@ namespace Classes.Lexer
                 {
                     string number = string.Empty;
 
+                    int colBeforeLoop = col;
                     while (pos < source.Length && char.IsDigit(source[pos]))
                     {
                         number += source[pos];
                         pos++;
+                        col++;
                     }
                     if (pos < source.Length && source[pos] == '.')
                     {
                         number += source[pos];
                         pos++;
+                        col++;
                         while (pos < source.Length && char.IsDigit(source[pos]))
                         {
                             number += source[pos];
                             pos++;
+                            col++;
                         }
-                        tokens.Add(new Token(Type.DECIMAL_NUM, number.ToString()));
+                        tokens.Add(new Token(Type.DECIMAL_NUM, line, colBeforeLoop, sources[line - 1], number.ToString()));
                         continue;
                     }
-                    tokens.Add(new Token(Type.DIGIT, number.ToString()));
+                    tokens.Add(new Token(Type.DIGIT, line, colBeforeLoop, sources[line - 1], number.ToString()));
                     continue;
                 }
 
                 else if (c == '+')
                 {
-                    tokens.Add(new Token(Type.ADD));
+                    tokens.Add(new Token(Type.ADD, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if (c == '-')
                 {
-                    tokens.Add(new Token(Type.SUB));
+                    tokens.Add(new Token(Type.SUB, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     continue;
                 }
 
                 else if (c == '"')
                 {
-                    tokens.Add(new Token(Type.OPENCLOSESTR));
+                    tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     string? word = string.Empty;
                     try
                     {
+                        int colBeforeLoop = col;
                         while (pos < source.Length && source[pos] is not '"')
                         {
                             word += source[pos];
                             pos++;
+                            col++;
                         }
-                        tokens.Add(new Token(Type.STRING, word.ToString()));
+                        tokens.Add(new Token(Type.STRING, line, colBeforeLoop, sources[line - 1], word.ToString()));
                     }
                     catch (Exception e)
                     {
@@ -135,8 +160,9 @@ namespace Classes.Lexer
                     }
                     if (pos < source.Length && source[pos] == '"')
                     {
-                        tokens.Add(new Token(Type.OPENCLOSESTR));
+                        tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
                         pos++;
+                        col++;
                         continue;
                     }
                     else
@@ -147,18 +173,21 @@ namespace Classes.Lexer
 
                 else if (c == '\'')
                 {
-                    tokens.Add(new Token(Type.OPENCLOSECHAR));
+                    tokens.Add(new Token(Type.OPENCLOSECHAR, line, col, sources[line - 1]));
                     pos++;
+                    col++;
                     string? letter = "";
                     try
                     {
+                        int colBeforeLoop = col;
                         while (pos < source.Length && source[pos] is not '\'')
                         {
                             letter += source[pos];
                             pos++;
+                            col++;
                         }
                         bool IsChar = char.TryParse(letter, out char result);
-                        if (IsChar) tokens.Add(new Token(Type.CHAR, letter));
+                        if (IsChar) tokens.Add(new Token(Type.CHAR, line, colBeforeLoop, sources[line - 1], letter));
                         else throw new Exception("SCHAR error: expected a char ('') but received another type");
                     }
                     catch (Exception e)
@@ -167,8 +196,9 @@ namespace Classes.Lexer
                     }
                     if (pos < source.Length && source[pos] == '\'')
                     {
-                        tokens.Add(new Token(Type.OPENCLOSECHAR));
+                        tokens.Add(new Token(Type.OPENCLOSECHAR, line, col, sources[line - 1]));
                         pos++;
+                        col++;
                         continue;
                     }
                     else
@@ -182,18 +212,20 @@ namespace Classes.Lexer
                     string? word = string.Empty;
                     try
                     {
+                        int colBeforeLoop = col;
                         while (pos < source.Length && char.IsLetterOrDigit(source[pos]))
                         {
                             word += source[pos];
                             pos++;
+                            col++;
                         }
 
                         if (keywords.TryGetValue(word, out Type type)) {
-                            tokens.Add(new Token(type));
+                            tokens.Add(new Token(type, line, colBeforeLoop, sources[line - 1]));
                         }
                         else
                         {
-                            tokens.Add(new Token(Type.VAR, word.ToString()));
+                            tokens.Add(new Token(Type.VAR, line, colBeforeLoop, sources[line - 1], word.ToString()));
                         }
 
                         continue;

@@ -1,5 +1,1 @@
-﻿define num x is 10#
-define num y is 3#
-define decimal z is x divide y#
-
-show z#
+﻿define str x is 123#

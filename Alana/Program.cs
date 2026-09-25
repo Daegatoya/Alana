@@ -1,6 +1,7 @@
 ﻿using Classes;
 using Classes.AST;
 using Classes.AST.Expressions;
+using Classes.Handler;
 using Classes.Interpreter;
 using Classes.Lexer;
 using Classes.Parser;
@@ -36,6 +37,10 @@ namespace Alana
 
                 Interpreter interpreter = new Interpreter();
                 interpreter.Execute(statements);
+            }
+            catch (AlanaError ex)
+            {
+                Console.WriteLine(ex);
             }
             catch (Exception ex)
             {

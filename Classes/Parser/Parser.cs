@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Classes.Handler;
 
 namespace Classes.Parser
 {
@@ -25,16 +26,14 @@ namespace Classes.Parser
         {
             if (pos >= tokens.Length)
             {
-                throw new Exception("Unexpected end of file");
+                throw new AlanaError("Unexpected end of file", tokens[^1].line, tokens[^1].col, tokens[^1].source!);
             }
 
             Token token = tokens[pos];
 
             if (!expectedTypes.Contains(token.type))
             {
-                throw new Exception(
-                    $"Expected {string.Join(" or ", expectedTypes)} but received {token.type}"
-                );
+                throw new AlanaError($"Expected {string.Join(" or ", expectedTypes)} but received {token.type}", token.line, token.col, token.source!);
             }
 
             pos++;
