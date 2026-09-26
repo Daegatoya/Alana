@@ -33,6 +33,17 @@ public enum Type
     DECIMAL_NUM,
     BOOL_C,
     OPENCLOSECHAR,
+    IF,
+    EQUAL_EQUAL,
+    NOT,
+    GREATERTHAN,
+    LESSTHAN,
+    AND,
+    OR,
+    LESSOREQUAL,
+    GREATEROREQUAL,
+    ELSEIF,
+    ELSE,
 }
 
 namespace Classes.Lexer

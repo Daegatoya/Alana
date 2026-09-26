@@ -24,6 +24,17 @@ namespace Classes.Lexer
             ["decimal"] = Type.DECIMAL,
             ["schar"] = Type.CHAR,
             ["boolean"] = Type.BOOL,
+            ["sameas"] = Type.EQUAL_EQUAL,
+            ["if"] = Type.IF,
+            ["not"] = Type.NOT,
+            ["greaterthan"] = Type.GREATERTHAN,
+            ["lessthan"] = Type.LESSTHAN,
+            ["or"] = Type.OR,
+            ["and"] = Type.AND,
+            ["grorsame"] = Type.GREATEROREQUAL,
+            ["leorsame"] = Type.LESSOREQUAL,
+            ["elseif"] = Type.ELSEIF,
+            ["else"] = Type.ELSE,
         };
         private string source { get; }
         private int pos = 0;

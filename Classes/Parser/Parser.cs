@@ -104,7 +104,68 @@ namespace Classes.Parser
             {
                 return ParseReturn();
             }
+
+            if (tokens[pos].type == Type.IF)
+            {
+                return ParseIfStatement();
+            }
             throw new Exception($"Unexpected token: {tokens[pos].type}");
+        }
+
+        private Expression ParseUnaryExpression()
+        {
+            if (tokens[pos].type == Type.NOT)
+            {
+                Use(Type.NOT);
+                return new NotExpression(ParseUnaryExpression());
+            }
+
+            return ParseComparisonExpression();
+        }
+
+        public IfStatement ParseIfStatement()
+        {
+            List<Statement> body = new();
+            List<ElseIfStatement>? elseIfStatements = null;
+            List<Statement>? elseBody = null;
+            Use(Type.IF);
+            Expression condition = ParseExpression();
+            Use(Type.END);
+            while (pos < tokens.Length && tokens[pos].type != Type.ELSE && tokens[pos].type != Type.ELSEIF && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement statement = ParseStatement()!;
+                body.Add(statement);
+            }
+            if(pos < tokens.Length && tokens[pos].type == Type.ELSEIF) elseIfStatements = new();
+            while (pos < tokens.Length && tokens[pos].type == Type.ELSEIF)
+            {
+                Use(Type.ELSEIF);
+                Expression elseIfCondition = ParseExpression();
+                Use(Type.END);
+                List<Statement> elseIfBody = new();
+
+                while (pos < tokens.Length && tokens[pos].type != Type.ELSE && tokens[pos].type != Type.ELSEIF && tokens[pos].type != Type.EXITFUNC)
+                {
+                    Statement eiStatement = ParseStatement()!;
+                    elseIfBody.Add(eiStatement);
+                }
+
+                elseIfStatements.Add(new ElseIfStatement(elseIfCondition, elseIfBody));
+            }
+            if(pos < tokens.Length && tokens[pos].type == Type.ELSE)
+            {
+                Use(Type.ELSE);
+                Use(Type.END);
+                elseBody = new();
+                while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+                {
+                    Statement eStatement = ParseStatement()!;
+                    elseBody!.Add(eStatement);
+                }
+            }
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+            return new IfStatement(condition, body, elseBody, elseIfStatements);
         }
 
         public FuncCall ParseFuncCall()
@@ -205,7 +266,7 @@ namespace Classes.Parser
             Use(Type.DEFFUNC);
             Token name = Use(Type.VAR);
             Use(Type.OPEN);
-            while (tokens[pos].type != Type.CLOSE)
+            while (pos < tokens.Length && tokens[pos].type != Type.CLOSE)
             {
                 Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL);
                 Token name_Param = Use(Type.VAR);
@@ -226,7 +287,7 @@ namespace Classes.Parser
                 }
             }
             Use(Type.CLOSE);
-            while(tokens[pos].type != Type.EXITFUNC)
+            while(pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
                 Statement statement = ParseStatement()!;
                 body.Add(statement);
@@ -292,14 +353,21 @@ namespace Classes.Parser
             return new NumberExpression(int.Parse(token.value!));
         }
 
-        private Expression ParseExpression()
+        private Expression ParseComparisonExpression()
         {
             Expression left = ParseValue();
 
-            while (tokens[pos].type != Type.END && tokens[pos].type != Type.COMA && tokens[pos].type != Type.CLOSE)
+            while (
+                tokens[pos].type != Type.END &&
+                tokens[pos].type != Type.COMA &&
+                tokens[pos].type != Type.CLOSE &&
+                tokens[pos].type != Type.AND &&
+                tokens[pos].type != Type.OR
+            )
             {
                 Type operation = tokens[pos].type;
                 Use(operation);
+
                 Expression right = ParseValue();
 
                 switch (operation)
@@ -320,8 +388,52 @@ namespace Classes.Parser
                         left = new Division(left, right);
                         break;
 
+                    case Type.EQUAL_EQUAL:
+                        left = new SameAs(left, right);
+                        break;
+
+                    case Type.GREATERTHAN:
+                        left = new GreaterThan(left, right);
+                        break;
+
+                    case Type.LESSOREQUAL:
+                        left = new LessOrEqual(left, right);
+                        break;
+
+                    case Type.GREATEROREQUAL:
+                        left = new GreaterOrEqual(left, right);
+                        break;
+
+                    case Type.LESSTHAN:
+                        left = new LessThan(left, right);
+                        break;
+
                     default:
                         throw new Exception($"Unexpected operator: {operation}");
+                }
+            }
+
+            return left;
+        }
+
+        private Expression ParseExpression()
+        {
+            Expression left = ParseUnaryExpression();
+
+            while (tokens[pos].type == Type.AND || tokens[pos].type == Type.OR)
+            {
+                Type operation = tokens[pos].type;
+                Use(operation);
+
+                Expression right = ParseUnaryExpression();
+
+                if (operation == Type.AND)
+                {
+                    left = new AndExpression(left, right);
+                }
+                else if (operation == Type.OR)
+                {
+                    left = new OrExpression(left, right);
                 }
             }
 

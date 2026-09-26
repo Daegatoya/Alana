@@ -1,1 +1,8 @@
-﻿define str x is 123#
+﻿define num x is 50#
+define num y is 50#
+
+if not x sameas y#
+    show false#
+else#
+    show true#
+end#
