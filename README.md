@@ -342,7 +342,7 @@ show call process(50)#
 
 ## So what's next?
 
-I will continue improving the language and add more functionalities. Soon enough, if/else statements should be added. Then, I will be working on arrays and loops and the language should be good to go.
+I will continue improving the language and add more functionalities. I will be working on arrays and loops and the language should be good to go.
 
 Finally, I will create a full on installer so you can try the language at home without having to debug the entire source code (obviously).
 
