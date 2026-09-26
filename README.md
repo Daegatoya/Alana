@@ -83,7 +83,7 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] If / elseif / else statements
 - [ ] Arrays
 - [ ] Loops
-- [ ] Making you a sandwich
+- [ ] Making you a sandwich (now that I think about it, I don't think I'll add this feature...)
 
 In the table below, you can see all **variable types** included in the language:
 
