@@ -59,7 +59,7 @@ namespace Alana
 
 The C# program interprets the language using the following layers, in order:
 
-- A lexer
+- Lexer
 - Tokens
 - AST
 - Parser
