@@ -4,7 +4,7 @@
 <hr>
 
 **Introducing Alana**, a simple programming language I started coding for my portfolio.
-The programming language works with the extension .alana and has a built-in console to execute commands.
+Alana source files use the .alana extension and there's a built-in terminal to execute commands.
 
 When launching alana.bat (or simply adding it to your environment variables, which will be done automatically with the Inno installer when I make it), you will simply need to type:
 
@@ -12,7 +12,7 @@ When launching alana.bat (or simply adding it to your environment variables, whi
 
 Then, if your file is well written and doesn't contain errors, your program will launch in the console.
 
-The language has been built using C# dotnet 8.0. The program to launch the language is divided between a classes library (.DLL) and a C# program using the library.
+The language has been built using C# dotnet 8.0. The program to launch the language is divided between a class library (.DLL) and a C# program using the library.
 
 **The main program file looks like this**:
 
@@ -77,12 +77,15 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Parameters
 - [x] Return values
 - [x] Local scopes
-- [x] Conditions
+- [x] Recursive functions
+- [x] Comparisons
+- [x] Boolean logic
+- [x] If / elseif / else statements
 - [ ] Arrays
 - [ ] Loops
 - [ ] Making you a sandwich
 
-In the board below, you can see all **variable types** included in the language:
+In the table below, you can see all **variable types** included in the language:
 
 | Type | Description | Example |
 |------|-------------|---------|
@@ -92,7 +95,7 @@ In the board below, you can see all **variable types** included in the language:
 | `schar` | Singular Character | `'A'` |
 | `boolean` | Boolean | `true` |
 
-So, the syntax goes as follow:
+So, the syntax goes as follows:
 
 ### Basic keywords
 <details>
@@ -116,7 +119,7 @@ So, the syntax goes as follow:
 | Syntax | Description |
 |------|-------------|
 | `+` | Addition |
-| `-` | Substraction |
+| `-` | Subtraction |
 | `times` | Multiplication |
 | `divide` | Division |
 
@@ -129,7 +132,7 @@ So, the syntax goes as follow:
 |------|-------------|
 | `if` | Starting if statement |
 | `elseif` | Adding a condition if prior statement is false |
-| `else` | Returns a value if all prior statements are false |
+| `else` | Executes if all previous conditions are false |
 
 </details>
 
@@ -143,7 +146,7 @@ So, the syntax goes as follow:
 | `lessthan` | Compares if x is less than y (<) |
 | `leorsame` | Compares if x is less or same as y (<=) |
 | `grorsame` | Compares if x is greater or same as y (>=) |
-| `not` | Changes the value of the boolean return of the comparison (!) |
+| `not` | Inverts the boolean result of an expression (!) |
 
 </details>
 
@@ -187,7 +190,7 @@ show z#
     
 </details>
 
-### *Playing with all type of variables*
+### *Playing with all variable types*
 <details>
     
 ```txt
@@ -342,9 +345,13 @@ show call process(50)#
 
 ## So what's next?
 
-I will continue improving the language and add more functionalities. I will be working on arrays and loops and the language should be good to go.
+Alana can now handle variables, functions, local scopes, recursion, comparisons, boolean logic, and full if / elseif / else conditional statements.
 
-Finally, I will create a full on installer so you can try the language at home without having to debug the entire source code (obviously).
+The next major features I plan to work on are arrays and loops. Once those are implemented, the core language should be in a pretty solid state.
+
+After that, I will focus on cleaning up the codebase, improving error handling (which I already started doing, sneak peek in the parser!), adding more tests and documentation, and eventually creating a full installer so you can try Alana without having to build or debug the entire source code yourself.
+
+And, of course, Alana will probably keep evolving as I come up with more ideas.
 
 <hr>
 
