@@ -287,6 +287,7 @@ namespace Classes.Parser
                 }
             }
             Use(Type.CLOSE);
+            Use(Type.END);
             while(pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
                 Statement statement = ParseStatement()!;

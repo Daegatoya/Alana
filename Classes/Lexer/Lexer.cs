@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Classes.Handler;
 
 namespace Classes.Lexer
 {
@@ -53,11 +54,12 @@ namespace Classes.Lexer
 
             while (pos < source.Length)
             {
-                if (source[^1] != '#' && source[^1] != ')') throw new Exception("End of line (#) required.");
                 char c = source[pos];
 
-                if(c == '\n')
+                if (c == '\n')
                 {
+                    string currentLine = sources[line - 1].TrimEnd('\r', ' ', '\t');
+                    if (currentLine.Length > 0 && currentLine[^1] != '#') throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
                     line++;
                     col = 1;
                     pos++;
@@ -154,21 +156,14 @@ namespace Classes.Lexer
                     pos++;
                     col++;
                     string? word = string.Empty;
-                    try
+                    int colBeforeLoop = col;
+                    while (pos < source.Length && source[pos] is not '"')
                     {
-                        int colBeforeLoop = col;
-                        while (pos < source.Length && source[pos] is not '"')
-                        {
-                            word += source[pos];
-                            pos++;
-                            col++;
-                        }
-                        tokens.Add(new Token(Type.STRING, line, colBeforeLoop, sources[line - 1], word.ToString()));
+                        word += source[pos];
+                        pos++;
+                        col++;
                     }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
+                    tokens.Add(new Token(Type.STRING, line, colBeforeLoop, sources[line - 1], word.ToString()));
                     if (pos < source.Length && source[pos] == '"')
                     {
                         tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
@@ -178,7 +173,7 @@ namespace Classes.Lexer
                     }
                     else
                     {
-                        throw new Exception($"Expected {Type.OPENCLOSESTR} but received {source[pos]}");
+                        throw new AlanaError($"Expected {Type.OPENCLOSESTR} but received {source[pos]}", line, colBeforeLoop, sources[line - 1]);
                     }
                 }
 
@@ -188,23 +183,16 @@ namespace Classes.Lexer
                     pos++;
                     col++;
                     string? letter = "";
-                    try
+                    int colBeforeLoop = col;
+                    while (pos < source.Length && source[pos] is not '\'')
                     {
-                        int colBeforeLoop = col;
-                        while (pos < source.Length && source[pos] is not '\'')
-                        {
-                            letter += source[pos];
-                            pos++;
-                            col++;
-                        }
-                        bool IsChar = char.TryParse(letter, out char result);
-                        if (IsChar) tokens.Add(new Token(Type.CHAR, line, colBeforeLoop, sources[line - 1], letter));
-                        else throw new Exception("SCHAR error: expected a char ('') but received another type");
+                        letter += source[pos];
+                        pos++;
+                        col++;
                     }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine(e.Message);
-                    }
+                    bool IsChar = char.TryParse(letter, out char result);
+                    if (IsChar) tokens.Add(new Token(Type.CHAR, line, colBeforeLoop, sources[line - 1], letter));
+                    else throw new AlanaError("SCHAR error: expected a char ('') but received another type", line, colBeforeLoop, sources[line - 1]);
                     if (pos < source.Length && source[pos] == '\'')
                     {
                         tokens.Add(new Token(Type.OPENCLOSECHAR, line, col, sources[line - 1]));
@@ -214,40 +202,34 @@ namespace Classes.Lexer
                     }
                     else
                     {
-                        throw new Exception($"Expected {Type.OPENCLOSECHAR} but received {source[pos]}");
+                        throw new AlanaError($"Expected {Type.OPENCLOSECHAR} but received {source[pos]}", line, colBeforeLoop, sources[line - 1]);
                     }
                 }
 
                 else if (char.IsLetter(c))
                 {
                     string? word = string.Empty;
-                    try
+                    int colBeforeLoop = col;
+                    while (pos < source.Length && char.IsLetterOrDigit(source[pos]))
                     {
-                        int colBeforeLoop = col;
-                        while (pos < source.Length && char.IsLetterOrDigit(source[pos]))
-                        {
-                            word += source[pos];
-                            pos++;
-                            col++;
-                        }
-
-                        if (keywords.TryGetValue(word, out Type type)) {
-                            tokens.Add(new Token(type, line, colBeforeLoop, sources[line - 1]));
-                        }
-                        else
-                        {
-                            tokens.Add(new Token(Type.VAR, line, colBeforeLoop, sources[line - 1], word.ToString()));
-                        }
-
-                        continue;
+                        word += source[pos];
+                        pos++;
+                        col++;
                     }
-                    catch (Exception e)
+
+                    if (keywords.TryGetValue(word, out Type type))
                     {
-                        Console.WriteLine(e.Message);
+                        tokens.Add(new Token(type, line, colBeforeLoop, sources[line - 1]));
                     }
+                    else
+                    {
+                        tokens.Add(new Token(Type.VAR, line, colBeforeLoop, sources[line - 1], word.ToString()));
+                    }
+
+                    continue;
                 }
 
-                throw new Exception($"Unknown character {c}");
+                throw new AlanaError($"Unknown character {c}", line, col, sources[line - 1]);
             }
 
             return tokens.ToArray();

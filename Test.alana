@@ -1,8 +1,3 @@
 ﻿define num x is 50#
-define num y is 50#
-
-if not x sameas y#
-    show false#
-else#
-    show true#
-end#
+define schar y is 'a#
+define num l is 60#
