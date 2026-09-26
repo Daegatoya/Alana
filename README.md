@@ -77,9 +77,9 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Parameters
 - [x] Return values
 - [x] Local scopes
+- [x] Conditions
 - [ ] Arrays
 - [ ] Loops
-- [ ] Conditions
 - [ ] Making you a sandwich
 
 In the board below, you can see all **variable types** included in the language:
@@ -94,21 +94,72 @@ In the board below, you can see all **variable types** included in the language:
 
 So, the syntax goes as follow:
 
+### Basic keywords
+<details>
+    
 | Syntax | Description |
 |------|-------------|
 | `define` | Define a variable |
 | `is` | Assignation |
-| `+/-/times/divide` | Arithmetic |
 | `show` | Function to print text or values |
 | `func` | Definition of a function |
-| `end` | Ending a function |
+| `end` | Ending a function / if statement |
 | `call` | Calling a function |
 | `#` | Endline character |
 | `return` | Return a value |
 
+</details>
+
+### Arithmetics
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `+` | Addition |
+| `-` | Substraction |
+| `times` | Multiplication |
+| `divide` | Division |
+
+</details>
+
+### If statements
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `if` | Starting if statement |
+| `elseif` | Adding a condition if prior statement is false |
+| `else` | Returns a value if all prior statements are false |
+
+</details>
+
+### Comparisons
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `sameas` | Compares if x is the same as y (==) |
+| `greaterthan` | Compares if x is greater than y (>) |
+| `lessthan` | Compares if x is less than y (<) |
+| `leorsame` | Compares if x is less or same as y (<=) |
+| `grorsame` | Compares if x is greater or same as y (>=) |
+| `not` | Changes the value of the boolean return of the comparison (!) |
+
+</details>
+
+### Multiple conditions
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `or` | Checks if left OR right expression is true |
+| `and` | Checks if left AND right expression is true |
+
+</details>
+
 The language uses as many English and simple terms as possible to be able to use it quickly and easily.
 
-The return type of a function is **NOT** declared. Therefore, it's up to you to make sure the variable you assign the return value to is the right type.
+The return type of a function can **NOT** be declared. Therefore, it's up to you to make sure the variable you assign the return value to is the right type.
 
 <hr>
 
@@ -153,7 +204,68 @@ show y#
 
 </details>
 
-### *Complex code using local variables, scopes, calls, definitions, etc.*
+### *If/elseif/else statements*
+<details>
+    
+```txt
+define num x is 50#
+
+if x sameas 40 or x sameas 30#
+    show true#
+elseif x greaterthan 60 and x lessthan 70#
+    show true#
+else#
+    show false#
+end#
+```
+
+</details>
+
+### *Comparisons*
+<details>
+    
+```txt
+define num x is 50#
+define num y is 60#
+
+if x sameas y#
+    show x#
+elseif x greaterthan y#
+    show x#
+elseif x lessthan y#
+    show x#
+elseif x leorsame y#
+    show x#
+elseif x grorsame y#
+    show x#
+elseif not x sameas y#
+    show x#
+else#
+    show y#
+end#
+```
+
+</details>
+
+### *Functions*
+<details>
+    
+```txt
+define func compare(num y, decimal z)
+    if y sameas z#
+        return true#
+    else#
+        return false#
+    end#
+end#
+
+define boolean isTheSame is call compare(50, 50.0)#
+show isTheSame#
+```
+
+</details>
+
+### *Complex code using variables, functions, scopes, conditions, calls, and recursion*
 <details>
     
 ```txt
@@ -164,43 +276,63 @@ define schar symbol is 'A'#
 define boolean active is true#
 
 define func calculate(num x, num y)
-    define num sum is x + y#
-    return sum#
+    define num result is x + y#
+
+    if not result lessthan 20#
+        return result#
+    elseif result sameas 15#
+        return result + 5#
+    else#
+        return 0#
+    end#
 end#
 
 define func process(num value)
     define num bonus is 15#
-    define num result is call calculate(value, bonus)#
+    define num calculated is call calculate(value, bonus)#
 
-    return result#
+    if active and calculated greaterthan 20#
+        define num extra is calculated + 10#
+        return extra#
+    else#
+        return calculated#
+    end#
+end#
+
+define func countdown(num value)
+    show value#
+
+    if value greaterthan 1#
+        return call countdown(value - 1)#
+    else#
+        return 0#
+    end#
 end#
 
 define func report(str name, num value)
     define num processed is call process(value)#
     define decimal finalValue is processed times multiplier#
 
-    show name#
-    show finalValue#
-    show language#
-    show symbol#
-    show active#
+    if not active or finalValue lessthan 50#
+        show "Processing inactive or too small"#
+    else#
+        show name#
+        show finalValue#
+        show language#
+        show symbol#
+    end#
 
     return finalValue#
 end#
 
-define func mainCalculation(num x, num y)
-    define num intermediate is call calculate(x, y)#
-    define num first is call process(intermediate)#
-    define num second is call process(intermediate + 5)#
-
-    return first + second#
-end#
-
-define num result is call mainCalculation(base, 20)#
+define num result is call calculate(base, 20)#
 define decimal reportResult is call report("Calculation result:", result)#
 
 show result#
 show reportResult#
+
+call countdown(5)#
+
 show call process(50)#
 ```
 
@@ -220,4 +352,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026
+> Copyright © Daegatoya - 2026 | Alana v0.3
