@@ -38,6 +38,10 @@ namespace Classes.Lexer
             ["else"] = Type.ELSE,
             ["redefine"] = Type.REDEFINE,
             ["new"] = Type.NEW,
+            ["push"] = Type.PUSH,
+            ["pop"] = Type.POP,
+            ["with"] = Type.WITH,
+            ["length"] = Type.LENGTH,
         };
         private string source { get; }
         private int pos = 0;

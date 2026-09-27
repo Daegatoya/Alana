@@ -76,6 +76,16 @@ namespace Classes.Parser
                 return ParseStrVariable();
             }
 
+            else if (tokens[pos].type == Type.PUSH)
+            {
+                return ParsePush();
+            }
+
+            else if (tokens[pos].type == Type.POP)
+            {
+                return ParsePop();
+            }
+
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.BOOL)
             {
                 return ParseBoolVariable();
@@ -174,6 +184,24 @@ namespace Classes.Parser
             Use(Type.EXITFUNC);
             Use(Type.END);
             return new IfStatement(condition, body, elseBody, elseIfStatements);
+        }
+
+        public PushStatement ParsePush()
+        {
+            Use(Type.PUSH);
+            Token name = Use(Type.VAR);
+            Use(Type.WITH);
+            Expression value = ParseExpression();
+            Use(Type.END);
+            return new PushStatement(name.value!, value);
+        }
+
+        public PopStatement ParsePop()
+        {
+            Use(Type.POP);
+            Token name = Use(Type.VAR);
+            Use(Type.END);
+            return new PopStatement(name.value!);
         }
 
         public FuncCall ParseFuncCall()
@@ -282,15 +310,34 @@ namespace Classes.Parser
             return new DefineVar(name.value!, VarType.STR, value, isArray);
         }
 
-        public RedefineVar ParseRedefine()
+        public Statement ParseRedefine()
         {
             Use(Type.REDEFINE);
             Token name = Use(Type.VAR);
+
+            if (tokens[pos].type == Type.OPENARRAY)
+            {
+                Use(Type.OPENARRAY);
+
+                Expression index = ParseExpression();
+
+                Use(Type.CLOSEARRAY);
+                Use(Type.EQUAL);
+
+                Expression value = ParseExpression();
+
+                Use(Type.END);
+
+                return new RedefineArrElement(name.value!, index, value);
+            }
+
             Use(Type.EQUAL);
-            Expression? value = ParseExpression();
+
+            Expression normalValue = ParseExpression();
+
             Use(Type.END);
 
-            return new RedefineVar(name.value!, value);
+            return new RedefineVar(name.value!, normalValue);
         }
 
         public DefFunction ParseFunction()
@@ -384,6 +431,14 @@ namespace Classes.Parser
 
         private Expression ParseValue()
         {
+            if (tokens[pos].type == Type.LENGTH)
+            {
+                Use(Type.LENGTH);
+                Token name = Use(Type.VAR);
+
+                return new Length(name.value!);
+            }
+
             if (tokens[pos].type == Type.OPENCLOSESTR)
             {
                 Use(Type.OPENCLOSESTR);
@@ -416,6 +471,14 @@ namespace Classes.Parser
 
             if (token.type == Type.VAR)
             {
+                if (tokens[pos].type == Type.OPENARRAY)
+                {
+                    Token name = token;
+                    Use(Type.OPENARRAY);
+                    Expression index = ParseExpression();
+                    Use(Type.CLOSEARRAY);
+                    return new ArrayAccessExpression(name.value!, index);
+                }
                 if (bool.TryParse(token.value!, out bool boolValue))
                 {
                     return new BoolExpression(boolValue);

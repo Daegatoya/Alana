@@ -1,1 +1,109 @@
-﻿define num x is [10, 20, 30]#
+﻿define num base is 10#
+define decimal multiplier is 2.5#
+define str language is "Alana"#
+define schar symbol is 'A'#
+define boolean active is true#
+
+define decimal lastReportValue is new#
+define num processCount is 0#
+
+define num[] history is []#
+
+define func calculate(num x, num y)#
+    define num result is x + y#
+
+    if not result lessthan 20#
+        return result#
+    elseif result sameas 15#
+        return result + 5#
+    else#
+        return 0#
+    end#
+end#
+
+define func process(num value)#
+    define num bonus is 15#
+    define num calculated is call calculate(value, bonus)#
+
+    redefine processCount is processCount + 1#
+
+    if active and calculated greaterthan 20#
+        define num extra is new#
+
+        redefine extra is calculated + 10#
+        redefine calculated is extra#
+
+        push history with calculated#
+
+        return calculated#
+    else#
+        push history with calculated#
+
+        return calculated#
+    end#
+end#
+
+define func countdown(num value)#
+    show value#
+
+    if value greaterthan 1#
+        return call countdown(value - 1)#
+    else#
+        return 0#
+    end#
+end#
+
+define func showHistory(num[] values)#
+    show length values#
+
+    if length values greaterthan 0#
+        show values[0]#
+    end#
+end#
+
+define func report(str name, num value)#
+    define num processed is call process(value)#
+    define decimal finalValue is new#
+
+    redefine finalValue is processed times multiplier#
+    redefine lastReportValue is finalValue#
+
+    if not active or finalValue lessthan 50#
+        show "Processing inactive or too small"#
+    else#
+        show name#
+        show finalValue#
+        show language#
+        show symbol#
+    end#
+
+    return finalValue#
+end#
+
+define num result is call calculate(base, 20)#
+define decimal reportResult is call report("Calculation result:", result)#
+
+show result#
+show reportResult#
+
+call countdown(5)#
+
+show call process(50)#
+
+show lastReportValue#
+show processCount#
+
+show length history#
+show history[0]#
+show history[1]#
+
+redefine history[0] is 100#
+show history[0]#
+
+push history with 200#
+show length history#
+
+pop history#
+show length history#
+
+call showHistory(history)#

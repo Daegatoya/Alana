@@ -64,6 +64,92 @@ namespace Classes.Interpreter
                     variable.value = value;
                     variable.isInitialized = true;
                 }
+                else if (s is PushStatement push)
+                {
+                    if (!variables.ContainsKey(push.name))
+                    {
+                        throw new Exception($"Variable {push.name} can't be found");
+                    }
+                    RunTimeVariable variable = variables[push.name];
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {push.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {push.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {push.name} does not contain a valid array");
+                    }
+
+                    object toPush = Evaluate(push.value);
+                    CheckType(toPush, variable.type);
+                    values.Add(toPush);
+                }
+                else if (s is PopStatement pop)
+                {
+                    if (!variables.ContainsKey(pop.name))
+                    {
+                        throw new Exception($"Variable {pop.name} can't be found");
+                    }
+                    RunTimeVariable variable = variables[pop.name];
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {pop.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {pop.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {pop.name} does not contain a valid array");
+                    }
+                    if (values.Count == 0)
+                    {
+                        throw new Exception($"Cannot pop from empty array {pop.name}");
+                    }
+                    values.RemoveAt(values.Count - 1);
+                }
+                else if (s is RedefineArrElement arr)
+                {
+                    if (!variables.ContainsKey(arr.name))
+                    {
+                        throw new Exception($"Variable {arr.name} can't be found");
+                    }
+                    RunTimeVariable variable = variables[arr.name];
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {arr.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {arr.name} is not initialized");
+                    }
+                    object indexValue = Evaluate(arr.index);
+
+                    if (indexValue is not int index)
+                    {
+                        throw new Exception($"Array index must be NUM");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {arr.name} does not contain a valid array");
+                    }
+                    if (index < 0 || index >= values.Count)
+                    {
+                        throw new Exception($"Array index {index} is out of bounds");
+                    }
+
+                    object value = Evaluate(arr.value);
+                    CheckType(value, variable.type);
+                    values[index] = value;
+                }
                 else if (s is Show sh)
                 {
                     object result = Evaluate(sh.expression);
@@ -151,6 +237,104 @@ namespace Classes.Interpreter
                         CheckType(value, d.type, d.isArray);
                         local_variables.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
                     }
+                }
+                else if (s is RedefineArrElement arr)
+                {
+                    RunTimeVariable arrayVariable = GetVariableForRedefinition(arr.name, local_variables);
+
+                    if (!arrayVariable.isArray)
+                    {
+                        throw new Exception($"Variable {arr.name} is not an array");
+                    }
+                    if (!arrayVariable.isInitialized)
+                    {
+                        throw new Exception($"Variable {arr.name} is not initialized");
+                    }
+                    object indexValue = Evaluate(arr.index, local_variables);
+
+                    if (indexValue is not int index)
+                    {
+                        throw new Exception($"Array index must be NUM");
+                    }
+                    if (arrayVariable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {arr.name} does not contain a valid array");
+                    }
+                    if (index < 0 || index >= values.Count)
+                    {
+                        throw new Exception($"Array index {index} is out of bounds");
+                    }
+
+                    object value = Evaluate(arr.value, local_variables);
+                    CheckType(value, arrayVariable.type);
+                    values[index] = value;
+                }
+                else if (s is PushStatement push)
+                {
+                    RunTimeVariable variable;
+                    if (local_variables != null && local_variables.ContainsKey(push.name))
+                    {
+                        variable = local_variables[push.name];
+                    }
+                    else if (variables.ContainsKey(push.name))
+                    {
+                        variable = variables[push.name];
+                    }
+                    else
+                    {
+                        throw new Exception($"Variable {push.name} can't be found");
+                    }
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {push.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {push.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {push.name} does not contain a valid array");
+                    }
+
+                    object toPush = Evaluate(push.value, local_variables);
+                    CheckType(toPush, variable.type);
+                    values.Add(toPush);
+                }
+                else if (s is PopStatement pop)
+                {
+                    RunTimeVariable variable;
+                    if (local_variables != null && local_variables.ContainsKey(pop.name))
+                    {
+                        variable = local_variables[pop.name];
+                    }
+                    else if (variables.ContainsKey(pop.name))
+                    {
+                        variable = variables[pop.name];
+                    }
+                    else
+                    {
+                        throw new Exception($"Variable {pop.name} can't be found");
+                    }
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {pop.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {pop.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {pop.name} does not contain a valid array");
+                    }
+                    if (values.Count == 0)
+                    {
+                        throw new Exception($"Cannot pop from empty array {pop.name}");
+                    }
+                    values.RemoveAt(values.Count - 1);
                 }
                 else if (s is RedefineVar rd)
                 {
@@ -257,6 +441,104 @@ namespace Classes.Interpreter
                         scope.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
                     }
                 }
+                else if (s is RedefineArrElement arr)
+                {
+                    RunTimeVariable arrayVariable = GetVariableForRedefinition(arr.name, scope);
+
+                    if (!arrayVariable.isArray)
+                    {
+                        throw new Exception($"Variable {arr.name} is not an array");
+                    }
+                    if (!arrayVariable.isInitialized)
+                    {
+                        throw new Exception($"Variable {arr.name} is not initialized");
+                    }
+                    object indexValue = Evaluate(arr.index, scope);
+
+                    if (indexValue is not int index)
+                    {
+                        throw new Exception($"Array index must be NUM");
+                    }
+                    if (arrayVariable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {arr.name} does not contain a valid array");
+                    }
+                    if (index < 0 || index >= values.Count)
+                    {
+                        throw new Exception($"Array index {index} is out of bounds");
+                    }
+
+                    object value = Evaluate(arr.value, scope);
+                    CheckType(value, arrayVariable.type);
+                    values[index] = value;
+                }
+                else if (s is PushStatement push)
+                {
+                    RunTimeVariable variable;
+                    if (local_variables != null && local_variables.ContainsKey(push.name))
+                    {
+                        variable = local_variables[push.name];
+                    }
+                    else if (variables.ContainsKey(push.name))
+                    {
+                        variable = variables[push.name];
+                    }
+                    else
+                    {
+                        throw new Exception($"Variable {push.name} can't be found");
+                    }
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {push.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {push.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {push.name} does not contain a valid array");
+                    }
+
+                    object toPush = Evaluate(push.value, scope);
+                    CheckType(toPush, variable.type);
+                    values.Add(toPush);
+                }
+                else if (s is PopStatement pop)
+                {
+                    RunTimeVariable variable;
+                    if (local_variables != null && local_variables.ContainsKey(pop.name))
+                    {
+                        variable = local_variables[pop.name];
+                    }
+                    else if (variables.ContainsKey(pop.name))
+                    {
+                        variable = variables[pop.name];
+                    }
+                    else
+                    {
+                        throw new Exception($"Variable {pop.name} can't be found");
+                    }
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {pop.name} is not an array");
+                    }
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {pop.name} is not initialized");
+                    }
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {pop.name} does not contain a valid array");
+                    }
+                    if (values.Count == 0)
+                    {
+                        throw new Exception($"Cannot pop from empty array {pop.name}");
+                    }
+                    values.RemoveAt(values.Count - 1);
+                }
                 else if (s is RedefineVar rd)
                 {
                     RunTimeVariable variable = GetVariableForRedefinition(rd.name, scope);
@@ -306,6 +588,49 @@ namespace Classes.Interpreter
 
         private object Evaluate(Expression expression, Dictionary<string, RunTimeVariable>? local_variables = null)
         {
+            if(expression is ArrayAccessExpression arrayAccess)
+            {
+                RunTimeVariable accessVariable;
+
+                if (local_variables != null && local_variables.ContainsKey(arrayAccess.name))
+                {
+                    accessVariable = local_variables[arrayAccess.name];
+                }
+                else if (variables.ContainsKey(arrayAccess.name))
+                {
+                    accessVariable = variables[arrayAccess.name];
+                }
+                else
+                {
+                    throw new Exception($"Variable {arrayAccess.name} can't be found");
+                }
+
+                if (!accessVariable.isArray)
+                {
+                    throw new Exception($"Variable {arrayAccess.name} is not an array");
+                }
+                if (!accessVariable.isInitialized)
+                {
+                    throw new Exception($"Variable {arrayAccess.name} is not initialized");
+                }
+                object indexValue = Evaluate(arrayAccess.index, local_variables);
+
+                if (indexValue is not int index)
+                {
+                    throw new Exception("Array index must be NUM");
+                }
+                if (accessVariable.value is not List<object> values)
+                {
+                    throw new Exception($"Variable {arrayAccess.name} does not contain a valid array");
+                }
+                if (index < 0 || index >= values.Count)
+                {
+                    throw new Exception($"Array index {index} is out of bounds");
+                }
+
+                return values[index];
+            }
+
             if(expression is ArrayExpression array)
             {
                 List<object> values = new();
@@ -389,6 +714,38 @@ namespace Classes.Interpreter
                 }
 
                 throw new Exception($"Unknown variable {variable.name}");
+            }
+
+            if (expression is Length length)
+            {
+                RunTimeVariable runtimeVar;
+                if (local_variables != null && local_variables.ContainsKey(length.name))
+                {
+                    runtimeVar = local_variables[length.name];
+                }
+                else if (variables.ContainsKey(length.name))
+                {
+                    runtimeVar = variables[length.name];
+                }
+                else
+                {
+                    throw new Exception($"Variable {length.name} can't be found");
+                }
+
+                if (!runtimeVar.isArray)
+                {
+                    throw new Exception($"Variable {length.name} is not an array");
+                }
+                if (!runtimeVar.isInitialized)
+                {
+                    throw new Exception($"Variable {length.name} is not initialized");
+                }
+
+                if (runtimeVar.value is not List<object> values)
+                {
+                    throw new Exception($"Variable {length.name} does not contain a valid array");
+                }
+                return values.Count;
             }
 
             if (expression is AndExpression a)

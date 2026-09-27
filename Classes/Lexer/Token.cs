@@ -48,6 +48,10 @@ public enum Type
     NEW,
     OPENARRAY,
     CLOSEARRAY,
+    PUSH,
+    WITH,
+    POP,
+    LENGTH
 }
 
 namespace Classes.Lexer
