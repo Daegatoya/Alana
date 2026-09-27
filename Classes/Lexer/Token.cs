@@ -46,6 +46,8 @@ public enum Type
     ELSE,
     REDEFINE,
     NEW,
+    OPENARRAY,
+    CLOSEARRAY,
 }
 
 namespace Classes.Lexer

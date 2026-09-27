@@ -12,12 +12,14 @@ namespace Classes.Interpreter
         public VarType type;
         public object? value = null;
         public bool isInitialized = false;
+        public bool isArray = false;
 
-        public RunTimeVariable(VarType type, object? value, bool isInitialized)
+        public RunTimeVariable(VarType type, object? value, bool isInitialized, bool isArray)
         {
             this.type = type;
             this.value = value;
             this.isInitialized = isInitialized;
+            this.isArray = isArray;
         }
     }
 }

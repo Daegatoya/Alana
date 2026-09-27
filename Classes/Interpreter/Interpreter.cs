@@ -33,13 +33,13 @@ namespace Classes.Interpreter
 
                     if (d.value is NewExpression)
                     {
-                        variables.Add(d.name, new RunTimeVariable(d.type, null, false));
+                        variables.Add(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
                     }
                     else
                     {
                         object value = Evaluate(d.value!);
-                        CheckType(value, d.type);
-                        variables.Add(d.name, new RunTimeVariable(d.type, value, true));
+                        CheckType(value, d.type, d.isArray);
+                        variables.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
                     }
                 }
                 else if (s is RedefineVar r)
@@ -59,7 +59,7 @@ namespace Classes.Interpreter
                     }
 
                     object value = Evaluate(r.value!);
-                    CheckType(value, variable.type);
+                    CheckType(value, variable.type, variable.isArray);
 
                     variable.value = value;
                     variable.isInitialized = true;
@@ -89,8 +89,36 @@ namespace Classes.Interpreter
             }
         }
 
-        private bool CheckType(object value, VarType? type)
+        private bool CheckType(object value, VarType? type, bool isArray = false)
         {
+            if (isArray)
+            {
+                if (value is not List<object> values)
+                {
+                    throw new Exception($"Type error: expected an array of {type}");
+                }
+
+                foreach (object element in values)
+                {
+                    bool elementIsRight = type switch
+                    {
+                        VarType.NUM => element is int,
+                        VarType.STR => element is string,
+                        VarType.CHAR => element is char,
+                        VarType.DECIMAL => element is decimal,
+                        VarType.BOOL => element is bool,
+                        _ => false
+                    };
+
+                    if (!elementIsRight)
+                    {
+                        throw new Exception($"Type error: expected array of {type} but got element of type {element.GetType()}");
+                    }
+                }
+
+                return true;
+            }
+
             bool isRight = type switch
             {
                 VarType.NUM => value is int,
@@ -102,7 +130,8 @@ namespace Classes.Interpreter
             };
 
             if (isRight) return true;
-            else throw new Exception($"Type error: expected {type} but got {value.GetType()}");
+
+            throw new Exception($"Type error: expected {type} but got {value.GetType()}");
         }
 
         private object ExecuteFunc(List<Statement> statements, Dictionary<string, RunTimeVariable> local_variables)
@@ -114,13 +143,13 @@ namespace Classes.Interpreter
                 {
                     if (d.value is NewExpression)
                     {
-                        local_variables.Add(d.name, new RunTimeVariable(d.type, null, false));
+                        local_variables.Add(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
                     }
                     else
                     {
                         object value = Evaluate(d.value!, local_variables);
-                        CheckType(value, d.type);
-                        local_variables.Add(d.name, new RunTimeVariable(d.type, value, true));
+                        CheckType(value, d.type, d.isArray);
+                        local_variables.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
                     }
                 }
                 else if (s is RedefineVar rd)
@@ -136,7 +165,7 @@ namespace Classes.Interpreter
 
                     object value = Evaluate(rd.value!, local_variables);
 
-                    CheckType(value, variable.type);
+                    CheckType(value, variable.type, variable.isArray);
 
                     variable.value = value;
                     variable.isInitialized = true;
@@ -219,13 +248,13 @@ namespace Classes.Interpreter
                 {
                     if (d.value is NewExpression)
                     {
-                        scope.Add(d.name, new RunTimeVariable(d.type, null, false));
+                        scope.Add(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
                     }
                     else
                     {
                         object value = Evaluate(d.value!, scope);
-                        CheckType(value, d.type);
-                        scope.Add(d.name, new RunTimeVariable(d.type, value, true));
+                        CheckType(value, d.type, d.isArray);
+                        scope.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
                     }
                 }
                 else if (s is RedefineVar rd)
@@ -241,7 +270,7 @@ namespace Classes.Interpreter
 
                     object value = Evaluate(rd.value!, scope);
 
-                    CheckType(value, variable.type);
+                    CheckType(value, variable.type, variable.isArray);
 
                     variable.value = value;
                     variable.isInitialized = true;
@@ -277,6 +306,18 @@ namespace Classes.Interpreter
 
         private object Evaluate(Expression expression, Dictionary<string, RunTimeVariable>? local_variables = null)
         {
+            if(expression is ArrayExpression array)
+            {
+                List<object> values = new();
+
+                foreach(Expression element in array.values)
+                {
+                    values.Add(Evaluate(element, local_variables));
+                }
+
+                return values;
+            }
+
             if (expression is FuncCall c)
             {
                 if (functions.TryGetValue(c.name, out DefFunction? function))
@@ -288,11 +329,11 @@ namespace Classes.Interpreter
                         Expression arg = c.arguments[i];
                         object a_value = Evaluate(arg, local_variables);
 
-                        if(!CheckType(a_value, p.type))
+                        if(!CheckType(a_value, p.type, p.isArray))
                         {
                             throw new Exception($"Parsed argument {a_value} has the wrong type for parameter {p.name} of type {p.type}");
                         }
-                        scope.Add(p.name, new RunTimeVariable(p.type, a_value, true));
+                        scope.Add(p.name, new RunTimeVariable(p.type, a_value, true, p.isArray));
                     }
 
                     return ExecuteFunc(function.body!, scope);

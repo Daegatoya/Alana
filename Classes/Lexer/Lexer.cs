@@ -83,6 +83,22 @@ namespace Classes.Lexer
                     continue;
                 }
 
+                else if (c == '[')
+                {
+                    tokens.Add(new Token(Type.OPENARRAY, line, col, sources[line - 1]));
+                    pos++;
+                    col++;
+                    continue;
+                }
+
+                else if (c == ']')
+                {
+                    tokens.Add(new Token(Type.CLOSEARRAY, line, col, sources[line - 1]));
+                    pos++;
+                    col++;
+                    continue;
+                }
+
                 else if (c == ',')
                 {
                     tokens.Add(new Token(Type.COMA, line, col, sources[line - 1]));
