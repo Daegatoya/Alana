@@ -4,7 +4,7 @@
 <hr>
 
 **Introducing Alana**, a simple programming language I started coding for my portfolio.
-Alana source files use the .alana extension and there's a built-in terminal to execute commands.
+Alana source files use the .alana extension and there's a command-line interface to execute commands.
 
 When launching alana.bat (or simply adding it to your environment variables, which will be done automatically with the Inno installer when I make it), you will simply need to type:
 
@@ -61,8 +61,8 @@ The C# program interprets the language using the following layers, in order:
 
 - Lexer
 - Tokens
-- AST
 - Parser
+- AST
 - Interpreter
 
 <hr>
@@ -92,7 +92,7 @@ In the table below, you can see all **variable types** included in the language:
 | `num` | Integer | `25` |
 | `decimal` | Decimal number | `12.5` |
 | `str` | String | `"Hello"` |
-| `schar` | Singular Character | `'A'` |
+| `schar` | Single Character | `'A'` |
 | `boolean` | Boolean | `true` |
 
 So, the syntax goes as follows:
@@ -103,13 +103,15 @@ So, the syntax goes as follows:
 | Syntax | Description |
 |------|-------------|
 | `define` | Define a variable |
-| `is` | Assignation |
+| `redefine` | Redefine a variable |
+| `is` | Assignment |
 | `show` | Function to print text or values |
 | `func` | Definition of a function |
 | `end` | Ending a function / if statement |
 | `call` | Calling a function |
 | `#` | Endline character |
 | `return` | Return a value |
+| `new` | Define a new uninitialized variable |
 
 </details>
 
@@ -179,7 +181,7 @@ Here are some quick codes in .alana:
 define num x is 10#
 define decimal y is 3.3#
 
-define func division(num x, decimal y)
+define func division(num x, decimal y)#
   return x divide y#
 end#
 
@@ -199,10 +201,25 @@ define schar c is '3'#
 define str y is "World"#
 define boolean zeroOrOne is true#
 
+define str x2 is new#
+define schar c2 is new#
+define str y2 is new#
+define boolean zeroOrOne2 is new#
+
+redefine x2 is "Hello"#
+redefine c2 is '3'#
+redefine y2 is "World"#
+redefine zeroOrOne2 is true#
+
 show zeroOrOne#
 show x#
 show c#
 show y#
+
+show zeroOrOne2#
+show x2#
+show c2#
+show y2#
 ```
 
 </details>
@@ -254,7 +271,7 @@ end#
 <details>
     
 ```txt
-define func compare(num y, decimal z)
+define func compare(num y, decimal z)#
     if y sameas z#
         return true#
     else#
@@ -278,7 +295,10 @@ define str language is "Alana"#
 define schar symbol is 'A'#
 define boolean active is true#
 
-define func calculate(num x, num y)
+define decimal lastReportValue is new#
+define num processCount is 0#
+
+define func calculate(num x, num y)#
     define num result is x + y#
 
     if not result lessthan 20#
@@ -290,19 +310,24 @@ define func calculate(num x, num y)
     end#
 end#
 
-define func process(num value)
+define func process(num value)#
     define num bonus is 15#
     define num calculated is call calculate(value, bonus)#
 
+    redefine processCount is processCount + 1#
+
     if active and calculated greaterthan 20#
-        define num extra is calculated + 10#
-        return extra#
+        define num extra is new#
+        redefine extra is calculated + 10#
+        redefine calculated is extra#
+
+        return calculated#
     else#
         return calculated#
     end#
 end#
 
-define func countdown(num value)
+define func countdown(num value)#
     show value#
 
     if value greaterthan 1#
@@ -312,9 +337,12 @@ define func countdown(num value)
     end#
 end#
 
-define func report(str name, num value)
+define func report(str name, num value)#
     define num processed is call process(value)#
-    define decimal finalValue is processed times multiplier#
+    define decimal finalValue is new#
+
+    redefine finalValue is processed times multiplier#
+    redefine lastReportValue is finalValue#
 
     if not active or finalValue lessthan 50#
         show "Processing inactive or too small"#
@@ -337,6 +365,9 @@ show reportResult#
 call countdown(5)#
 
 show call process(50)#
+
+show lastReportValue#
+show processCount#
 ```
 
 </details>
@@ -345,7 +376,7 @@ show call process(50)#
 
 ## So what's next?
 
-Alana can now handle variables, functions, local scopes, recursion, comparisons, boolean logic, and full if / elseif / else conditional statements.
+Alana can now handle variable declaration and reassignment, uninitialized variables, functions, local scopes, recursion, comparisons, boolean logic, and full if / elseif / else conditional statements.
 
 The next major features I plan to work on are arrays and loops. Once those are implemented, the core language should be in a pretty solid state.
 
@@ -359,4 +390,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026 | Alana v0.3
+> Copyright © Daegatoya - 2026 | Alana v0.4
