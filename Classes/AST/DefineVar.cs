@@ -19,9 +19,9 @@ namespace Classes.AST
     {
         public string name = string.Empty;
         public VarType type { get; private set; }
-        public Expression value;
+        public Expression? value;
 
-        public DefineVar(string name, VarType type, Expression value)
+        public DefineVar(string name, VarType type, Expression? value)
         {
             this.name = name;
             this.type = type;

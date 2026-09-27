@@ -44,6 +44,8 @@ public enum Type
     GREATEROREQUAL,
     ELSEIF,
     ELSE,
+    REDEFINE,
+    NEW,
 }
 
 namespace Classes.Lexer

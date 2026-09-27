@@ -10,10 +10,10 @@ namespace Classes.AST.Models
     public class Param
     {
         public string name = string.Empty;
-        public VarType? type = null;
+        public VarType type;
         public object? value = null;
 
-        public Param(string name, VarType? type)
+        public Param(string name, VarType type)
         {
             this.name = name;
             this.type = type;

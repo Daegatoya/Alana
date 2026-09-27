@@ -70,7 +70,7 @@ namespace Classes.Parser
                 return ParseNumVariable();
             }
 
-            else if(tokens[pos].type == Type.DEFINE && tokens[pos+1].type == Type.STR)
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.STR)
             {
                 return ParseStrVariable();
             }
@@ -95,6 +95,11 @@ namespace Classes.Parser
                 return ParseFunction();
             }
 
+            else if (tokens[pos].type == Type.REDEFINE)
+            {
+                return ParseRedefine();
+            }
+
             if (tokens[pos].type == Type.SHOW)
             {
                 return ParseShow();
@@ -109,7 +114,9 @@ namespace Classes.Parser
             {
                 return ParseIfStatement();
             }
-            throw new Exception($"Unexpected token: {tokens[pos].type}");
+            Token token = tokens[pos];
+
+            throw new AlanaError($"Unexpected token: {token.type} ({token.value})", token.line, token.col, token.source! );
         }
 
         private Expression ParseUnaryExpression()
@@ -204,7 +211,7 @@ namespace Classes.Parser
             Use(Type.NUM);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Expression value = ParseExpression();
+            Expression? value = ParseExpression();
             Use(Type.END);
 
             return new DefineVar(name.value!, VarType.NUM, value);
@@ -216,7 +223,7 @@ namespace Classes.Parser
             Use(Type.DECIMAL);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Expression value = ParseExpression();
+            Expression? value = ParseExpression();
             Use(Type.END);
 
             return new DefineVar(name.value!, VarType.DECIMAL, value);
@@ -228,7 +235,7 @@ namespace Classes.Parser
             Use(Type.BOOL);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Expression value = ParseExpression();
+            Expression? value = ParseExpression();
             Use(Type.END);
 
             return new DefineVar(name.value!, VarType.BOOL, value);
@@ -240,7 +247,7 @@ namespace Classes.Parser
             Use(Type.CHAR);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Expression value = ParseExpression();
+            Expression? value = ParseExpression();
             Use(Type.END);
 
             return new DefineVar(name.value!, VarType.CHAR, value);
@@ -252,10 +259,21 @@ namespace Classes.Parser
             Use(Type.STR);
             Token name = Use(Type.VAR);
             Use(Type.EQUAL);
-            Expression value = ParseExpression();
+            Expression? value = ParseExpression();
             Use(Type.END);
 
             return new DefineVar(name.value!, VarType.STR, value);
+        }
+
+        public RedefineVar ParseRedefine()
+        {
+            Use(Type.REDEFINE);
+            Token name = Use(Type.VAR);
+            Use(Type.EQUAL);
+            Expression? value = ParseExpression();
+            Use(Type.END);
+
+            return new RedefineVar(name.value!, value);
         }
 
         public DefFunction ParseFunction()
@@ -277,7 +295,7 @@ namespace Classes.Parser
                     Type.CHAR => VarType.CHAR,
                     Type.DECIMAL => VarType.DECIMAL,
                     Type.BOOL => VarType.BOOL,
-                    _ => throw new Exception($"Invalid type parsed for parameter {name_Param.value}")
+                    _ => throw new AlanaError($"Invalid type parsed for parameter {name_Param.value}", tokens[pos].line, tokens[pos].col, tokens[pos].source!)
                 };
                 @params.Add(new Param(name_Param.value!, type_Parsed!));
 
@@ -334,7 +352,7 @@ namespace Classes.Parser
                 return ParseFuncCall();
             }
 
-            Token token = Use(Type.VAR, Type.DIGIT, Type.DECIMAL_NUM);
+            Token token = Use(Type.VAR, Type.DIGIT, Type.DECIMAL_NUM, Type.NEW);
 
             if (token.type == Type.VAR)
             {
@@ -349,6 +367,11 @@ namespace Classes.Parser
             if (token.type == Type.DECIMAL_NUM)
             {
                 return new DecimalExpression(decimal.Parse(token.value!, CultureInfo.InvariantCulture));
+            }
+
+            if (token.type == Type.NEW)
+            {
+                return new NewExpression();
             }
 
             return new NumberExpression(int.Parse(token.value!));
@@ -410,7 +433,8 @@ namespace Classes.Parser
                         break;
 
                     default:
-                        throw new Exception($"Unexpected operator: {operation}");
+                        Token token = tokens[pos];
+                        throw new AlanaError($"Unexpected operator: {operation}", token.line, token.col, token.source!);
                 }
             }
 

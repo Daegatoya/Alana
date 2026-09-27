@@ -36,6 +36,8 @@ namespace Classes.Lexer
             ["leorsame"] = Type.LESSOREQUAL,
             ["elseif"] = Type.ELSEIF,
             ["else"] = Type.ELSE,
+            ["redefine"] = Type.REDEFINE,
+            ["new"] = Type.NEW,
         };
         private string source { get; }
         private int pos = 0;

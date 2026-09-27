@@ -4,6 +4,7 @@ using Classes.AST.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.ObjectiveC;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace Classes.Interpreter
 {
     public class Interpreter
     {
-        private Dictionary<string, object> variables = new();
+        private Dictionary<string, RunTimeVariable> variables = new();
         private Dictionary<string, DefFunction> functions = new();
 
         public Interpreter() { }
@@ -25,16 +26,43 @@ namespace Classes.Interpreter
             {
                 if (s is DefineVar d)
                 {
-                    object value = Evaluate(d.value);
-                    CheckType(value, d.type);
                     if (variables.ContainsKey(d.name))
                     {
-                        variables[d.name] = value;
+                        throw new Exception($"Variable {d.name} is already defined");
+                    }
+
+                    if (d.value is NewExpression)
+                    {
+                        variables.Add(d.name, new RunTimeVariable(d.type, null, false));
                     }
                     else
                     {
-                        variables.Add(d.name, value);
+                        object value = Evaluate(d.value!);
+                        CheckType(value, d.type);
+                        variables.Add(d.name, new RunTimeVariable(d.type, value, true));
                     }
+                }
+                else if (s is RedefineVar r)
+                {
+                    if (!variables.ContainsKey(r.name))
+                    {
+                        throw new Exception($"Variable {r.name} can't be found");
+                    }
+
+                    RunTimeVariable variable = variables[r.name];
+
+                    if (r.value is NewExpression)
+                    {
+                        variable.value = null;
+                        variable.isInitialized = false;
+                        continue;
+                    }
+
+                    object value = Evaluate(r.value!);
+                    CheckType(value, variable.type);
+
+                    variable.value = value;
+                    variable.isInitialized = true;
                 }
                 else if (s is Show sh)
                 {
@@ -51,7 +79,7 @@ namespace Classes.Interpreter
                 }
                 else if (s is IfStatement i)
                 {
-                    Dictionary<string, object> local_variables = new();
+                    Dictionary<string, RunTimeVariable> local_variables = new();
                     ExecuteIfStatement(i, local_variables);
                 }
                 else
@@ -77,15 +105,41 @@ namespace Classes.Interpreter
             else throw new Exception($"Type error: expected {type} but got {value.GetType()}");
         }
 
-        private object ExecuteFunc(List<Statement> statements, Dictionary<string, object> local_variables)
+        private object ExecuteFunc(List<Statement> statements, Dictionary<string, RunTimeVariable> local_variables)
         {
             if (statements is null) return null;
             foreach (Statement s in statements)
             {
                 if (s is DefineVar d)
                 {
-                    object value = Evaluate(d.value, local_variables);
-                    local_variables[d.name] = value;
+                    if (d.value is NewExpression)
+                    {
+                        local_variables.Add(d.name, new RunTimeVariable(d.type, null, false));
+                    }
+                    else
+                    {
+                        object value = Evaluate(d.value!, local_variables);
+                        CheckType(value, d.type);
+                        local_variables.Add(d.name, new RunTimeVariable(d.type, value, true));
+                    }
+                }
+                else if (s is RedefineVar rd)
+                {
+                    RunTimeVariable variable = GetVariableForRedefinition(rd.name, local_variables);
+
+                    if (rd.value is NewExpression)
+                    {
+                        variable.value = null;
+                        variable.isInitialized = false;
+                        continue;
+                    }
+
+                    object value = Evaluate(rd.value!, local_variables);
+
+                    CheckType(value, variable.type);
+
+                    variable.value = value;
+                    variable.isInitialized = true;
                 }
                 else if (s is Show sh)
                 {
@@ -115,7 +169,7 @@ namespace Classes.Interpreter
             return null;
         }
 
-        private object? ExecuteIfStatement(IfStatement ifStatement, Dictionary<string, object> currentScope)
+        private object? ExecuteIfStatement(IfStatement ifStatement, Dictionary<string, RunTimeVariable> currentScope)
         {
             object conditionValue = Evaluate(ifStatement.condition, currentScope);
 
@@ -151,10 +205,10 @@ namespace Classes.Interpreter
             return null;
         }
 
-        private object ExecuteIf(List<Statement> statements, Dictionary<string, object> local_variables)
+        private object ExecuteIf(List<Statement> statements, Dictionary<string, RunTimeVariable> local_variables)
         {
-            Dictionary<string, object> scope = new();
-            foreach (KeyValuePair<string, object> kvp in local_variables)
+            Dictionary<string, RunTimeVariable> scope = new();
+            foreach (KeyValuePair<string, RunTimeVariable> kvp in local_variables)
             {
                 scope.Add(kvp.Key, kvp.Value);
             }
@@ -163,8 +217,34 @@ namespace Classes.Interpreter
             {
                 if (s is DefineVar d)
                 {
-                    object value = Evaluate(d.value, scope);
-                    scope[d.name] = value;
+                    if (d.value is NewExpression)
+                    {
+                        scope.Add(d.name, new RunTimeVariable(d.type, null, false));
+                    }
+                    else
+                    {
+                        object value = Evaluate(d.value!, scope);
+                        CheckType(value, d.type);
+                        scope.Add(d.name, new RunTimeVariable(d.type, value, true));
+                    }
+                }
+                else if (s is RedefineVar rd)
+                {
+                    RunTimeVariable variable = GetVariableForRedefinition(rd.name, scope);
+
+                    if (rd.value is NewExpression)
+                    {
+                        variable.value = null;
+                        variable.isInitialized = false;
+                        continue;
+                    }
+
+                    object value = Evaluate(rd.value!, scope);
+
+                    CheckType(value, variable.type);
+
+                    variable.value = value;
+                    variable.isInitialized = true;
                 }
                 else if (s is Show sh)
                 {
@@ -195,13 +275,13 @@ namespace Classes.Interpreter
             return null;
         }
 
-        private object Evaluate(Expression expression, Dictionary<string, object>? local_variables = null)
+        private object Evaluate(Expression expression, Dictionary<string, RunTimeVariable>? local_variables = null)
         {
             if (expression is FuncCall c)
             {
                 if (functions.TryGetValue(c.name, out DefFunction? function))
                 {
-                    Dictionary<string, object> scope = new();
+                    Dictionary<string, RunTimeVariable> scope = new();
                     for(int i = 0; i < function.parameters!.Count; i++)
                     {
                         Param p = function.parameters[i];
@@ -212,7 +292,7 @@ namespace Classes.Interpreter
                         {
                             throw new Exception($"Parsed argument {a_value} has the wrong type for parameter {p.name} of type {p.type}");
                         }
-                        scope.Add(p.name, a_value);
+                        scope.Add(p.name, new RunTimeVariable(p.type, a_value, true));
                     }
 
                     return ExecuteFunc(function.body!, scope);
@@ -249,20 +329,28 @@ namespace Classes.Interpreter
 
             if (expression is VarExpression variable)
             {
-                if(local_variables != null && local_variables.ContainsKey(variable.name))
+                if (local_variables != null && local_variables.ContainsKey(variable.name))
                 {
-                    return local_variables[variable.name];
+                    RunTimeVariable runtimeVar = local_variables[variable.name];
+
+                    if (!runtimeVar.isInitialized) throw new Exception($"Variable {variable.name} is not initialized");
+
+                    return runtimeVar.value!;
                 }
 
                 if (variables.ContainsKey(variable.name))
                 {
-                    return variables[variable.name];
+                    RunTimeVariable runtimeVar = variables[variable.name];
+
+                    if (!runtimeVar.isInitialized) throw new Exception($"Variable {variable.name} is not initialized");
+
+                    return runtimeVar.value!;
                 }
 
                 throw new Exception($"Unknown variable {variable.name}");
             }
 
-            if(expression is AndExpression a)
+            if (expression is AndExpression a)
             {
                 object left = Evaluate(a.left, local_variables);
                 object right = Evaluate(a.right, local_variables);
@@ -465,6 +553,21 @@ namespace Classes.Interpreter
             }
 
             throw new Exception("Unknown expression");
+        }
+
+        private RunTimeVariable GetVariableForRedefinition(string name, Dictionary<string, RunTimeVariable>? localVariables = null)
+        {
+            if (localVariables != null && localVariables.ContainsKey(name))
+            {
+                return localVariables[name];
+            }
+
+            if (variables.ContainsKey(name))
+            {
+                return variables[name];
+            }
+
+            throw new Exception($"Variable {name} can't be found");
         }
     }
 }
