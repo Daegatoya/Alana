@@ -200,7 +200,7 @@ define func division(num x, decimal y)#
 end#
 
 define decimal z is call division(x, y)#
-show z#
+showln z#
 ```
 
     
@@ -225,15 +225,15 @@ redefine c2 is '3'#
 redefine y2 is "World"#
 redefine zeroOrOne2 is true#
 
-show zeroOrOne#
-show x#
-show c#
-show y#
+showln zeroOrOne#
+showln x#
+showln c#
+showln y#
 
-show zeroOrOne2#
-show x2#
-show c2#
-show y2#
+showln zeroOrOne2#
+showln x2#
+showln c2#
+showln y2#
 ```
 
 </details>
@@ -245,11 +245,11 @@ show y2#
 define num x is 50#
 
 if x sameas 40 or x sameas 30#
-    show true#
+    showln true#
 elseif x greaterthan 60 and x lessthan 70#
-    show true#
+    showln true#
 else#
-    show false#
+    showln false#
 end#
 ```
 
@@ -263,19 +263,19 @@ define num x is 50#
 define num y is 60#
 
 if x sameas y#
-    show x#
+    showln x#
 elseif x greaterthan y#
-    show x#
+    showln x#
 elseif x lessthan y#
-    show x#
+    showln x#
 elseif x leorsame y#
     show x#
 elseif x grorsame y#
-    show x#
+    showln x#
 elseif not x sameas y#
-    show x#
+    showln x#
 else#
-    show y#
+    showln y#
 end#
 ```
 
@@ -294,7 +294,7 @@ define func compare(num y, decimal z)#
 end#
 
 define boolean isTheSame is call compare(50, 50.0)#
-show isTheSame#
+showln isTheSame#
 ```
 
 </details>
@@ -305,32 +305,32 @@ show isTheSame#
 ```txt
 define num[] numbers is [10, 20, 30]#
 
-show length numbers#
+showln length numbers#
 
 push numbers with 40#
 push numbers with 50#
 
-show length numbers#
-show numbers[3]#
-show numbers[4]#
+showln length numbers#
+showln numbers[3]#
+showln numbers[4]#
 
 pop numbers#
 
-show length numbers#
-show numbers[3]#
+showln length numbers#
+showln numbers[3]#
 
 define func modify(num[] arr)#
     push arr with 99#
-    show length arr#
-    show arr[length arr - 1]#
+    showln length arr#
+    showln arr[length arr - 1]#
     pop arr#
-    show length arr#
+    showln length arr#
 end#
 
 call modify(numbers)#
 
-show length numbers#
-show numbers[3]#
+showln length numbers#
+showln numbers[3]#
 ```
 
 </details>
@@ -385,7 +385,7 @@ define func process(num value)#
 end#
 
 define func countdown(num value)#
-    show value#
+    showln value#
 
     if value greaterthan 1#
         return call countdown(value - 1)#
@@ -395,10 +395,10 @@ define func countdown(num value)#
 end#
 
 define func showHistory(num[] values)#
-    show length values#
+    showln length values#
 
     if length values greaterthan 0#
-        show values[0]#
+        showln values[0]#
     end#
 end#
 
@@ -410,12 +410,12 @@ define func report(str name, num value)#
     redefine lastReportValue is finalValue#
 
     if not active or finalValue lessthan 50#
-        show "Processing inactive or too small"#
+        showln "Processing inactive or too small"#
     else#
-        show name#
-        show finalValue#
-        show language#
-        show symbol#
+        showln name#
+        showln finalValue#
+        showln language#
+        showln symbol#
     end#
 
     return finalValue#
@@ -424,28 +424,28 @@ end#
 define num result is call calculate(base, 20)#
 define decimal reportResult is call report("Calculation result:", result)#
 
-show result#
-show reportResult#
+showln result#
+showln reportResult#
 
 call countdown(5)#
 
-show call process(50)#
+showln call process(50)#
 
-show lastReportValue#
-show processCount#
+showln lastReportValue#
+showln processCount#
 
-show length history#
-show history[0]#
-show history[1]#
+showln length history#
+showln history[0]#
+showln history[1]#
 
 redefine history[0] is 100#
-show history[0]#
+showln history[0]#
 
 push history with 200#
 show length history#
 
 pop history#
-show length history#
+showln length history#
 
 call showHistory(history)#
 ```
