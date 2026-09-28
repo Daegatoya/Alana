@@ -379,6 +379,11 @@ namespace Classes.Interpreter
                     object result = Evaluate(sh.expression, local_variables);
                     Console.WriteLine(result);
                 }
+                else if (s is ShowLn shln)
+                {
+                    object result = Evaluate(shln.expression, local_variables);
+                    Console.WriteLine(result);
+                }
                 else if (s is ReturnStatement r)
                 {
                     if(r.expression is null)
@@ -584,6 +589,11 @@ namespace Classes.Interpreter
                 else if (s is Show sh)
                 {
                     object result = Evaluate(sh.expression, scope);
+                    Console.WriteLine(result);
+                }
+                else if (s is ShowLn shln)
+                {
+                    object result = Evaluate(shln.expression, local_variables);
                     Console.WriteLine(result);
                 }
                 else if (s is ReturnStatement r)

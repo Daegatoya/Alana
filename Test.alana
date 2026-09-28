@@ -1,94 +1,135 @@
-﻿showln "=== PARSENUM ==="#
+﻿define num base is 10#
+define decimal multiplier is 2.5#
+define str language is "Alana"#
+define schar symbol is 'A'#
+define boolean active is true#
 
-define str numText is "123"#
-define schar numChar is '7'#
-define num numValue is 42#
+define decimal lastReportValue is new#
+define num processCount is 0#
 
-showln parsenum(numText)#
-showln parsenum(numChar)#
-showln parsenum(numValue)#
+define num[] history is []#
 
-showln#
-showln "=== PARSEDECIMAL ==="#
+define func calculate(num x, num y)#
+    define num result is x + y#
 
-define str decimalText is "12.5"#
-define schar decimalChar is '8'#
-define num integerValue is 25#
-define decimal decimalValue is 3.75#
+    if not result lessthan 20#
+        return result#
+    elseif result sameas 15#
+        return result + 5#
+    else#
+        return 0#
+    end#
+end#
 
-showln parsedecimal(decimalText)#
-showln parsedecimal(decimalChar)#
-showln parsedecimal(integerValue)#
-showln parsedecimal(decimalValue)#
+define func process(num value)#
+    define num bonus is 15#
+    define num calculated is call calculate(value, bonus)#
 
-showln#
-showln "=== PARSEBOOLEAN ==="#
+    redefine processCount is processCount + 1#
 
-define str trueText is "true"#
-define str falseText is "false"#
-define boolean boolValue is true#
+    if active and calculated greaterthan 20#
+        define num extra is new#
 
-showln parseboolean(trueText)#
-showln parseboolean(falseText)#
-showln parseboolean(boolValue)#
+        redefine extra is calculated + 10#
+        redefine calculated is extra#
 
-showln#
-showln "=== PARSECHAR ==="#
+        push history with calculated#
 
-define str oneLetter is "A"#
-define schar existingChar is 'Z'#
-define num oneDigit is 5#
+        return calculated#
+    else#
+        push history with calculated#
 
-showln parseschar(oneLetter)#
-showln parseschar(existingChar)#
-showln parseschar(oneDigit)#
+        return calculated#
+    end#
+end#
 
-showln#
-showln "=== PARSESTR ==="#
+define func countdown(num value)#
+    showln value#
 
-define num numberToString is 999#
-define decimal decimalToString is 15.25#
-define boolean boolToString is false#
-define schar charToString is 'Q'#
-define str alreadyString is "Alana"#
+    if value greaterthan 1#
+        return call countdown(value - 1)#
+    else#
+        return 0#
+    end#
+end#
 
-showln parsestr(numberToString)#
-showln parsestr(decimalToString)#
-showln parsestr(boolToString)#
-showln parsestr(charToString)#
-showln parsestr(alreadyString)#
+define func showHistory(num[] values)#
+    showln length values#
 
-showln#
-showln "=== COMBINED ==="#
+    if length values greaterthan 0#
+        showln values[0]#
+    end#
+end#
 
-define str x is "50"#
-define num parsedX is parsenum(x)#
-define decimal parsedDecimal is parsedecimal(parsestr(parsedX))#
+define func report(str name, num value)#
+    define num processed is call process(value)#
+    define decimal finalValue is new#
 
-showln parsedX#
-showln parsedDecimal#
-showln parsestr(parseschar("B"))#
+    redefine finalValue is processed times multiplier#
+    redefine lastReportValue is finalValue#
 
-showln#
+    if not active or finalValue lessthan 50#
+        showln "Processing inactive or too small"#
+    else#
+        showln name#
+        showln finalValue#
+        showln language#
+        showln symbol#
+    end#
+
+    return finalValue#
+end#
+
+show "Enter your name: "#
+define str userName is readln#
+
+show "Hello "#
+showln userName#
+
 show "Enter a number: "#
-define num userNumber is parsenum(readln)#
-show "You entered: "#
-showln userNumber#
+define num userValue is parsenum(readln)#
 
-show "Enter a decimal: "#
-define decimal userDecimal is parsedecimal(readln)#
-show "You entered: "#
-showln userDecimal#
+show "Parsed value: "#
+showln userValue#
 
-show "Enter true or false: "#
-define boolean userBool is parseboolean(readln)#
-show "You entered: "#
-showln userBool#
+define num result is call calculate(base, userValue)#
+define decimal reportResult is call report("Calculation result:", result)#
 
-show "Enter one character: "#
-define schar userChar is parseschar(readln)#
-show "You entered: "#
-showln userChar#
+showln result#
+showln reportResult#
+
+call countdown(5)#
+
+showln call process(50)#
+
+showln lastReportValue#
+showln processCount#
+
+showln length history#
+showln history[0]#
+showln history[1]#
+
+redefine history[0] is 100#
+showln history[0]#
+
+push history with 200#
+showln length history#
+
+pop history#
+showln length history#
+
+call showHistory(history)#
+
+define str processCountText is parsestr(processCount)#
+
+show "Process count as string: "#
+showln processCountText#
+
+show "Press any key to finish: "#
+define schar exitKey is readk#
 
 showln#
-showln "All parse tests completed."#
+show "You pressed: "#
+showln exitKey#
+
+showln "Done."#
