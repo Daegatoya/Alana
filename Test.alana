@@ -1,6 +1,94 @@
-﻿define num x is 50#
+﻿showln "=== PARSENUM ==="#
 
-show x#
-show x#
+define str numText is "123"#
+define schar numChar is '7'#
+define num numValue is 42#
+
+showln parsenum(numText)#
+showln parsenum(numChar)#
+showln parsenum(numValue)#
+
 showln#
-showln x#
+showln "=== PARSEDECIMAL ==="#
+
+define str decimalText is "12.5"#
+define schar decimalChar is '8'#
+define num integerValue is 25#
+define decimal decimalValue is 3.75#
+
+showln parsedecimal(decimalText)#
+showln parsedecimal(decimalChar)#
+showln parsedecimal(integerValue)#
+showln parsedecimal(decimalValue)#
+
+showln#
+showln "=== PARSEBOOLEAN ==="#
+
+define str trueText is "true"#
+define str falseText is "false"#
+define boolean boolValue is true#
+
+showln parseboolean(trueText)#
+showln parseboolean(falseText)#
+showln parseboolean(boolValue)#
+
+showln#
+showln "=== PARSECHAR ==="#
+
+define str oneLetter is "A"#
+define schar existingChar is 'Z'#
+define num oneDigit is 5#
+
+showln parseschar(oneLetter)#
+showln parseschar(existingChar)#
+showln parseschar(oneDigit)#
+
+showln#
+showln "=== PARSESTR ==="#
+
+define num numberToString is 999#
+define decimal decimalToString is 15.25#
+define boolean boolToString is false#
+define schar charToString is 'Q'#
+define str alreadyString is "Alana"#
+
+showln parsestr(numberToString)#
+showln parsestr(decimalToString)#
+showln parsestr(boolToString)#
+showln parsestr(charToString)#
+showln parsestr(alreadyString)#
+
+showln#
+showln "=== COMBINED ==="#
+
+define str x is "50"#
+define num parsedX is parsenum(x)#
+define decimal parsedDecimal is parsedecimal(parsestr(parsedX))#
+
+showln parsedX#
+showln parsedDecimal#
+showln parsestr(parseschar("B"))#
+
+showln#
+show "Enter a number: "#
+define num userNumber is parsenum(readln)#
+show "You entered: "#
+showln userNumber#
+
+show "Enter a decimal: "#
+define decimal userDecimal is parsedecimal(readln)#
+show "You entered: "#
+showln userDecimal#
+
+show "Enter true or false: "#
+define boolean userBool is parseboolean(readln)#
+show "You entered: "#
+showln userBool#
+
+show "Enter one character: "#
+define schar userChar is parseschar(readln)#
+show "You entered: "#
+showln userChar#
+
+showln#
+showln "All parse tests completed."#

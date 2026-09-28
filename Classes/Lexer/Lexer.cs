@@ -43,6 +43,13 @@ namespace Classes.Lexer
             ["with"] = Type.WITH,
             ["length"] = Type.LENGTH,
             ["showln"] = Type.SHOWLN,
+            ["readln"] = Type.READLN,
+            ["readk"] = Type.READK,
+            ["parsedecimal"] = Type.PARSEDEC,
+            ["parsestr"] = Type.PARSESTR,
+            ["parsenum"] = Type.PARSENUM,
+            ["parseschar"] = Type.PARSECHAR,
+            ["parseboolean"] = Type.PARSEBOOL,
         };
         private string source { get; }
         private int pos = 0;

@@ -52,7 +52,14 @@ public enum Type
     WITH,
     POP,
     LENGTH,
-    SHOWLN
+    SHOWLN,
+    READLN,
+    READK,
+    PARSENUM,
+    PARSESTR,
+    PARSEBOOL,
+    PARSEDEC,
+    PARSECHAR,
 }
 
 namespace Classes.Lexer

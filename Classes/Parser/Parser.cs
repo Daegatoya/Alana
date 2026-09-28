@@ -130,9 +130,22 @@ namespace Classes.Parser
             {
                 return ParseIfStatement();
             }
+
+            if (tokens[pos].type == Type.READLN || tokens[pos].type == Type.READK)
+            {
+                return ParseAutonomousStatement();
+            }
+
             Token token = tokens[pos];
 
             throw new AlanaError($"Unexpected token: {token.type} ({token.value})", token.line, token.col, token.source! );
+        }
+
+        private ExpressionStatement ParseAutonomousStatement()
+        {
+            Expression expr = ParseExpression();
+            Use(Type.END);
+            return new ExpressionStatement(expr);
         }
 
         private Expression ParseUnaryExpression()
@@ -250,6 +263,57 @@ namespace Classes.Parser
             }
             return false;
         }
+
+        public ParseNum ParseNumParser()
+        {
+            Use(Type.PARSENUM);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            return new ParseNum(exp);
+        }
+
+        public ParseString ParseStrParser()
+        {
+            Use(Type.PARSESTR);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            return new ParseString(exp);
+        }
+
+        public ParseBool ParseBoolParser()
+        {
+            Use(Type.PARSEBOOL);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            return new ParseBool(exp);
+        }
+
+        public ParseChar ParseCharParser()
+        {
+            Use(Type.PARSECHAR);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            return new ParseChar(exp);
+        }
+
+        public ParseDecimal ParseDecimalParser()
+        {
+            Use(Type.PARSEDEC);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            return new ParseDecimal(exp);
+        }
+
         public DefineVar ParseNumVariable()
         {
             Use(Type.DEFINE);
@@ -455,6 +519,18 @@ namespace Classes.Parser
 
         private Expression ParseValue()
         {
+            if (tokens[pos].type == Type.READLN)
+            {
+                Use(Type.READLN);
+                return new ReadLine();
+            }
+
+            if (tokens[pos].type == Type.READK)
+            {
+                Use(Type.READK);
+                return new ReadKey();
+            }
+
             if (tokens[pos].type == Type.LENGTH)
             {
                 Use(Type.LENGTH);
@@ -489,6 +565,31 @@ namespace Classes.Parser
             if (tokens[pos].type == Type.CALL)
             {
                 return ParseFuncCall();
+            }
+
+            if (tokens[pos].type == Type.PARSEBOOL)
+            {
+                return ParseBoolParser();
+            }
+
+            if (tokens[pos].type == Type.PARSENUM)
+            {
+                return ParseNumParser();
+            }
+
+            if (tokens[pos].type == Type.PARSESTR)
+            {
+                return ParseStrParser();
+            }
+
+            if (tokens[pos].type == Type.PARSEDEC)
+            {
+                return ParseDecimalParser();
+            }
+
+            if (tokens[pos].type == Type.PARSECHAR)
+            {
+                return ParseCharParser();
             }
 
             Token token = Use(Type.VAR, Type.DIGIT, Type.DECIMAL_NUM, Type.NEW);

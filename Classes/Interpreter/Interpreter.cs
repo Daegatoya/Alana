@@ -3,6 +3,7 @@ using Classes.AST.Expressions;
 using Classes.AST.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices.ObjectiveC;
@@ -182,6 +183,10 @@ namespace Classes.Interpreter
                 {
                     Dictionary<string, RunTimeVariable> local_variables = new();
                     ExecuteIfStatement(i, local_variables);
+                }
+                else if (s is ExpressionStatement exp)
+                {
+                    Evaluate(exp.expression);
                 }
                 else
                 {
@@ -388,6 +393,10 @@ namespace Classes.Interpreter
                     object? ifResult = ExecuteIfStatement(i, local_variables);
                     if (ifResult != null) return ifResult;
                 }
+                else if (s is ExpressionStatement exp)
+                {
+                    Evaluate(exp.expression);
+                }
                 else
                 {
                     throw new Exception($"Invalid statement {s}");
@@ -592,6 +601,10 @@ namespace Classes.Interpreter
                     object? ifResult = ExecuteIfStatement(i, scope);
                     if (ifResult != null) return ifResult;
                 }
+                else if (s is ExpressionStatement exp)
+                {
+                    Evaluate(exp.expression);
+                }
                 else
                 {
                     throw new Exception($"Invalid statement {s}");
@@ -688,7 +701,17 @@ namespace Classes.Interpreter
                 return str.value;
             }
 
-            if(expression is BoolExpression b)
+            if (expression is ReadLine)
+            {
+                return Console.ReadLine();
+            }
+
+            if (expression is ReadKey)
+            {
+                return Console.ReadKey(intercept:true).KeyChar;
+            }
+
+            if (expression is BoolExpression b)
             {
                 return b.value;
             }
@@ -729,6 +752,89 @@ namespace Classes.Interpreter
                 }
 
                 throw new Exception($"Unknown variable {variable.name}");
+            }
+
+            if (expression is ParseNum pnum)
+            {
+                object value = Evaluate(pnum.expression, local_variables);
+                if(value is not string && value is not char && value is not int)
+                {
+                    throw new Exception($"Unexpected type for parsenum(). Expected schar, num, or str but received {value.GetType()}");
+                }
+                if(int.TryParse(value.ToString(), out int result))
+                {
+                    return result;
+                }
+                else
+                {
+                    throw new Exception($"Cannot parse expected value to num");
+                }
+            }
+
+            if (expression is ParseDecimal pdec)
+            {
+                object value = Evaluate(pdec.expression, local_variables);
+                if (value is not string && value is not char && value is not decimal && value is not int)
+                {
+                    throw new Exception($"Unexpected type for parsedecimal(). Expected schar, num, decimal, or str but received {value.GetType()}");
+                }
+                if(value is decimal)
+                {
+                    return value;
+                }
+                else if(value is int)
+                {
+                    return Convert.ToDecimal(value);
+                }
+                else if(value is string || value is char)
+                {
+                    decimal.TryParse(value.ToString(), CultureInfo.InvariantCulture, out decimal result);
+                    return result;
+                }
+                else
+                {
+                    throw new Exception($"Cannot parse expected value to decimal");
+                }
+            }
+
+            if (expression is ParseBool pbool)
+            {
+                object value = Evaluate(pbool.expression, local_variables);
+                if (value is not string && value is not bool)
+                {
+                    throw new Exception($"Unexpected type for parseboolean(). Expected str or bool but received {value.GetType()}");
+                }
+                if (bool.TryParse(value.ToString(), out bool result))
+                {
+                    return result;
+                }
+                else
+                {
+                    throw new Exception($"Cannot parse expected value to boolean");
+                }
+            }
+
+            if (expression is ParseChar pchar)
+            {
+                object value = Evaluate(pchar.expression, local_variables);
+                if (value is not string && value is not int && value is not char)
+                {
+                    throw new Exception($"Unexpected type for parseschar(). Expected num, schar, or str but received {value.GetType()}");
+                }
+                if (char.TryParse(value.ToString(), out char result))
+                {
+                    return result;
+                }
+                else
+                {
+                    throw new Exception($"Cannot parse expected value to schar");
+                }
+            }
+
+            if (expression is ParseString pstr)
+            {
+                object value = Evaluate(pstr.expression, local_variables);
+                return value.ToString()!;
             }
 
             if (expression is Length length)
@@ -865,14 +971,14 @@ namespace Classes.Interpreter
                 object left = Evaluate(addition.left, local_variables);
                 object right = Evaluate(addition.right, local_variables);
 
-                if(left is int && right is int)
+                if (left is int && right is int)
                 {
                     int left_final = (int)left;
                     int right_final = (int)right;
                     return left_final + right_final;
                 }
 
-                else if(left is decimal && right is int)
+                else if (left is decimal && right is int)
                 {
                     decimal left_final = (decimal)left;
                     int right_final = (int)right;
@@ -883,6 +989,27 @@ namespace Classes.Interpreter
                 {
                     int left_final = (int)left;
                     decimal right_final = (decimal)right;
+                    return left_final + right_final;
+                }
+
+                else if (left is string && right is string)
+                {
+                    string left_final = (string)left;
+                    string right_final = (string)right;
+                    return left_final + right_final;
+                }
+
+                else if (left is string && right is char)
+                {
+                    string left_final = (string)left;
+                    char right_final = (char)right;
+                    return left_final + right_final;
+                }
+
+                else if (left is char && right is string)
+                {
+                    char left_final = (char)left;
+                    string right_final = (string)right;
                     return left_final + right_final;
                 }
             }
