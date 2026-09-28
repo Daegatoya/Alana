@@ -257,8 +257,8 @@ showln y2#
 <details>
     
 ```txt
-define str x is readln#
-showln parsenum(x)#
+define num x is parsenum(readln)#
+showln x#
 readk#
 ```
 
