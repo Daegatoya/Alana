@@ -106,7 +106,8 @@ So, the syntax goes as follows:
 | `define` | Define a variable |
 | `redefine` | Redefine a variable |
 | `is` | Assignment |
-| `show` | Function to print text or values |
+| `show` | Function to print text or values on same line |
+| `showln` | Function to print text or values with a line return |
 | `func` | Definition of a function |
 | `end` | Ending a function / if statement |
 | `call` | Calling a function |
