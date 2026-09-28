@@ -71,6 +71,11 @@ namespace Classes.Parser
                 return ParseNumVariable();
             }
 
+            else if (tokens[pos].type == Type.SHOWLN)
+            {
+                return ParseShowLn();
+            }
+
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.STR)
             {
                 return ParseStrVariable();
@@ -404,10 +409,29 @@ namespace Classes.Parser
         public Statement ParseShow()
         {
             Use(Type.SHOW);
-            Expression expression = ParseExpression();
+            if (pos < tokens.Length && tokens[pos].type == Type.END)
+            {
+                Use(Type.END);
+                return new Show();
+            }
+            Expression? expression = ParseExpression();
             Use(Type.END);
 
             return new Show(expression);
+        }
+
+        public Statement ParseShowLn()
+        {
+            Use(Type.SHOWLN);
+            if (pos < tokens.Length && tokens[pos].type == Type.END)
+            {
+                Use(Type.END);
+                return new ShowLn();
+            }
+            Expression? expression = ParseExpression();
+            Use(Type.END);
+
+            return new ShowLn(expression);
         }
 
         public ArrayExpression ParseArrayExpression()

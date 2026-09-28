@@ -152,7 +152,22 @@ namespace Classes.Interpreter
                 }
                 else if (s is Show sh)
                 {
+                    if(sh.expression is null)
+                    {
+                        Console.Write("");
+                        continue;
+                    }
                     object result = Evaluate(sh.expression);
+                    Console.Write(result);
+                }
+                else if (s is ShowLn shln)
+                {
+                    if (shln.expression is null)
+                    {
+                        Console.WriteLine("");
+                        continue;
+                    }
+                    object result = Evaluate(shln.expression);
                     Console.WriteLine(result);
                 }
                 else if (s is DefFunction f)

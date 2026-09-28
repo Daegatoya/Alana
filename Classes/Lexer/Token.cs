@@ -51,7 +51,8 @@ public enum Type
     PUSH,
     WITH,
     POP,
-    LENGTH
+    LENGTH,
+    SHOWLN
 }
 
 namespace Classes.Lexer

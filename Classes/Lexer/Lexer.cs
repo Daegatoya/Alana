@@ -42,6 +42,7 @@ namespace Classes.Lexer
             ["pop"] = Type.POP,
             ["with"] = Type.WITH,
             ["length"] = Type.LENGTH,
+            ["showln"] = Type.SHOWLN,
         };
         private string source { get; }
         private int pos = 0;

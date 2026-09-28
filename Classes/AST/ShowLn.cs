@@ -1,17 +1,17 @@
-﻿using System;
+﻿using Classes.AST.Expressions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Classes.AST.Expressions;
 
 namespace Classes.AST
 {
-    public class Show : Statement
+    public class ShowLn : Statement
     {
         public Expression? expression;
 
-        public Show(Expression? expression = null)
+        public ShowLn(Expression? expression = null)
         {
             this.expression = expression;
         }
