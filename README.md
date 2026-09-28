@@ -108,12 +108,27 @@ So, the syntax goes as follows:
 | `is` | Assignment |
 | `show` | Function to print text or values on same line |
 | `showln` | Function to print text or values with a line return |
+| `readln` | Reads an entire input of line (returns string) |
+| `readk` | Reads a key input (returns char) |
 | `func` | Definition of a function |
 | `end` | Ending a function / if statement |
 | `call` | Calling a function |
 | `#` | Endline character |
 | `return` | Return a value |
 | `new` | Define a new uninitialized variable |
+
+</details>
+
+### Type parsing
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `parsestr` | Parses a variable to str |
+| `parsenum` | Parses a variable to num |
+| `parsedecimal` | Parses a variable to decimal |
+| `parseschar` | Parses a variable to schar |
+| `parseboolean` | Parses a variable to boolean |
 
 </details>
 
@@ -237,6 +252,18 @@ showln y2#
 ```
 
 </details>
+
+### *Parsing a variable and reading*
+<details>
+    
+```txt
+define str x is readln#
+showln parsenum(x)#
+readk#
+```
+
+</details>
+
 
 ### *If/elseif/else statements*
 <details>
@@ -421,7 +448,19 @@ define func report(str name, num value)#
     return finalValue#
 end#
 
-define num result is call calculate(base, 20)#
+show "Enter your name: "#
+define str userName is readln#
+
+show "Hello "#
+showln userName#
+
+show "Enter a number: "#
+define num userValue is parsenum(readln)#
+
+show "Parsed value: "#
+showln userValue#
+
+define num result is call calculate(base, userValue)#
 define decimal reportResult is call report("Calculation result:", result)#
 
 showln result#
@@ -442,12 +481,26 @@ redefine history[0] is 100#
 showln history[0]#
 
 push history with 200#
-show length history#
+showln length history#
 
 pop history#
 showln length history#
 
 call showHistory(history)#
+
+define str processCountText is parsestr(processCount)#
+
+show "Process count as string: "#
+showln processCountText#
+
+show "Press any key to finish: "#
+define schar exitKey is readk#
+
+showln#
+show "You pressed: "#
+showln exitKey#
+
+showln "Done."#
 ```
 
 </details>
@@ -455,8 +508,6 @@ call showHistory(history)#
 <hr>
 
 ## So what's next?
-
-Alana can now handle variable declaration and reassignment, uninitialized variables, functions, local scopes, recursion, comparisons, boolean logic, arrays, and full if / elseif / else conditional statements.
 
 The next major features I plan to work on are loops. Once this is implemented, the core language should be in a pretty solid state.
 
