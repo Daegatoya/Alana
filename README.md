@@ -81,7 +81,7 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Comparisons
 - [x] Boolean logic
 - [x] If / elseif / else statements
-- [ ] Arrays
+- [x] Arrays
 - [ ] Loops
 - [ ] Making you a sandwich (now that I think about it, I don't think I'll add this feature...)
 
@@ -94,6 +94,7 @@ In the table below, you can see all **variable types** included in the language:
 | `str` | String | `"Hello"` |
 | `schar` | Single Character | `'A'` |
 | `boolean` | Boolean | `true` |
+| `[]` | Array | `[10, 20]` |
 
 So, the syntax goes as follows:
 
@@ -105,7 +106,8 @@ So, the syntax goes as follows:
 | `define` | Define a variable |
 | `redefine` | Redefine a variable |
 | `is` | Assignment |
-| `show` | Function to print text or values |
+| `show` | Function to print text or values on same line |
+| `showln` | Function to print text or values with a line return |
 | `func` | Definition of a function |
 | `end` | Ending a function / if statement |
 | `call` | Calling a function |
@@ -159,6 +161,18 @@ So, the syntax goes as follows:
 |------|-------------|
 | `or` | Checks if left OR right expression is true |
 | `and` | Checks if left AND right expression is true |
+
+</details>
+
+### Array management
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `length` | Return the length of the array |
+| `push` | Add a value at the end of an array |
+| `pop` | Remove a value at the end of an array |
+| `with` | Defines the value to push |
 
 </details>
 
@@ -285,7 +299,43 @@ show isTheSame#
 
 </details>
 
-### *Complex code using variables, functions, scopes, conditions, calls, and recursion*
+### *Arrays using scopes*
+<details>
+    
+```txt
+define num[] numbers is [10, 20, 30]#
+
+show length numbers#
+
+push numbers with 40#
+push numbers with 50#
+
+show length numbers#
+show numbers[3]#
+show numbers[4]#
+
+pop numbers#
+
+show length numbers#
+show numbers[3]#
+
+define func modify(num[] arr)#
+    push arr with 99#
+    show length arr#
+    show arr[length arr - 1]#
+    pop arr#
+    show length arr#
+end#
+
+call modify(numbers)#
+
+show length numbers#
+show numbers[3]#
+```
+
+</details>
+
+### *Complex code using variables, functions, scopes, conditions, calls, arrays, and recursion*
 <details>
     
 ```txt
@@ -297,6 +347,8 @@ define boolean active is true#
 
 define decimal lastReportValue is new#
 define num processCount is 0#
+
+define num[] history is []#
 
 define func calculate(num x, num y)#
     define num result is x + y#
@@ -318,11 +370,16 @@ define func process(num value)#
 
     if active and calculated greaterthan 20#
         define num extra is new#
+
         redefine extra is calculated + 10#
         redefine calculated is extra#
 
+        push history with calculated#
+
         return calculated#
     else#
+        push history with calculated#
+
         return calculated#
     end#
 end#
@@ -334,6 +391,14 @@ define func countdown(num value)#
         return call countdown(value - 1)#
     else#
         return 0#
+    end#
+end#
+
+define func showHistory(num[] values)#
+    show length values#
+
+    if length values greaterthan 0#
+        show values[0]#
     end#
 end#
 
@@ -368,6 +433,21 @@ show call process(50)#
 
 show lastReportValue#
 show processCount#
+
+show length history#
+show history[0]#
+show history[1]#
+
+redefine history[0] is 100#
+show history[0]#
+
+push history with 200#
+show length history#
+
+pop history#
+show length history#
+
+call showHistory(history)#
 ```
 
 </details>
@@ -376,11 +456,11 @@ show processCount#
 
 ## So what's next?
 
-Alana can now handle variable declaration and reassignment, uninitialized variables, functions, local scopes, recursion, comparisons, boolean logic, and full if / elseif / else conditional statements.
+Alana can now handle variable declaration and reassignment, uninitialized variables, functions, local scopes, recursion, comparisons, boolean logic, arrays, and full if / elseif / else conditional statements.
 
-The next major features I plan to work on are arrays and loops. Once those are implemented, the core language should be in a pretty solid state.
+The next major features I plan to work on are loops. Once this is implemented, the core language should be in a pretty solid state.
 
-After that, I will focus on cleaning up the codebase, improving error handling (which I already started doing, sneak peek in the parser!), adding more tests and documentation, and eventually creating a full installer so you can try Alana without having to build or debug the entire source code yourself.
+After that, I will focus on cleaning up the codebase, improving error handling (which I already started doing, sneak peek in the lexer!), adding more tests and documentation, and eventually creating a full installer so you can try Alana without having to build or debug the entire source code yourself.
 
 And, of course, Alana will probably keep evolving as I come up with more ideas.
 
