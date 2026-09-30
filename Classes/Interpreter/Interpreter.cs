@@ -188,6 +188,11 @@ namespace Classes.Interpreter
                 {
                     Evaluate(exp.expression);
                 }
+                else if (s is WhileStatement w)
+                {
+                    Dictionary<string, RunTimeVariable> local_variable = new();
+                    ExecuteWhileStatement(w, local_variable);
+                }
                 else
                 {
                     throw new Exception($"Invalid statement {s}");
@@ -402,6 +407,274 @@ namespace Classes.Interpreter
                 {
                     Evaluate(exp.expression);
                 }
+                else if (s is WhileStatement w)
+                {
+                    ExecResult? result = ExecuteWhileStatement(w, local_variables);
+
+                    if (result != null)
+                    {
+                        if (result.Flow == ExecFlow.Return)
+                        {
+                            return result.Value;
+                        }
+                    }
+                }
+                else
+                {
+                    throw new Exception($"Invalid statement {s}");
+                }
+            }
+
+            return null;
+        }
+
+        private ExecResult? ExecuteWhileStatement(WhileStatement whileStatement, Dictionary<string, RunTimeVariable> currentScope)
+        {
+            object conditionValue = Evaluate(whileStatement.expression, currentScope);
+            CheckType(conditionValue, VarType.BOOL);
+
+            bool condition = Convert.ToBoolean(conditionValue);
+
+            while (condition)
+            {
+                object? rawResult = ExecuteWhile(whileStatement.body, currentScope);
+
+                if (rawResult is ExecResult result)
+                {
+                    if (result.Flow == ExecFlow.Return) return result;
+
+                    if (result.Flow == ExecFlow.Break) break;
+
+                    if (result.Flow == ExecFlow.Continue)
+                    {
+                        conditionValue = Evaluate(whileStatement.expression, currentScope);
+                        CheckType(conditionValue, VarType.BOOL);
+                        condition = Convert.ToBoolean(conditionValue);
+                        continue;
+                    }
+                }
+
+                conditionValue = Evaluate(whileStatement.expression, currentScope);
+                CheckType(conditionValue, VarType.BOOL);
+                condition = Convert.ToBoolean(conditionValue);
+            }
+
+            return null;
+        }
+
+        private object? ExecuteWhile(List<Statement> statements, Dictionary<string, RunTimeVariable> local_variables)
+        {
+            Dictionary<string, RunTimeVariable> scope = new();
+
+            foreach (KeyValuePair<string, RunTimeVariable> kvp in local_variables)
+            {
+                scope.Add(kvp.Key, kvp.Value);
+            }
+
+            if (statements is null) return null;
+
+            foreach (Statement s in statements)
+            {
+                if (s is DefineVar d)
+                {
+                    if (d.value is NewExpression)
+                    {
+                        scope.Add(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
+                    }
+                    else
+                    {
+                        object value = Evaluate(d.value!, scope);
+
+                        CheckType(value, d.type, d.isArray);
+
+                        scope.Add(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
+                    }
+                }
+
+                else if (s is RedefineArrElement arr)
+                {
+                    RunTimeVariable arrayVariable = GetVariableForRedefinition(arr.name, scope);
+
+                    if (!arrayVariable.isArray)
+                    {
+                        throw new Exception($"Variable {arr.name} is not an array");
+                    }
+
+                    if (!arrayVariable.isInitialized)
+                    {
+                        throw new Exception($"Variable {arr.name} is not initialized");
+                    }
+
+                    object indexValue = Evaluate(arr.index, scope);
+
+                    if (indexValue is not int index)
+                    {
+                        throw new Exception("Array index must be NUM");
+                    }
+
+                    if (arrayVariable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {arr.name} does not contain a valid array");
+                    }
+
+                    if (index < 0 || index >= values.Count)
+                    {
+                        throw new Exception($"Array index {index} is out of bounds");
+                    }
+
+                    object value = Evaluate(arr.value, scope);
+
+                    CheckType(value, arrayVariable.type);
+
+                    values[index] = value;
+                }
+
+                else if (s is PushStatement push)
+                {
+                    RunTimeVariable variable = GetVariableForRedefinition(push.name, scope);
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {push.name} is not an array");
+                    }
+
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {push.name} is not initialized");
+                    }
+
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {push.name} does not contain a valid array");
+                    }
+
+                    object toPush = Evaluate(push.value, scope);
+
+                    CheckType(toPush, variable.type);
+
+                    values.Add(toPush);
+                }
+
+                else if (s is PopStatement pop)
+                {
+                    RunTimeVariable variable = GetVariableForRedefinition(pop.name, scope);
+
+                    if (!variable.isArray)
+                    {
+                        throw new Exception($"Variable {pop.name} is not an array");
+                    }
+
+                    if (!variable.isInitialized)
+                    {
+                        throw new Exception($"Variable {pop.name} is not initialized");
+                    }
+
+                    if (variable.value is not List<object> values)
+                    {
+                        throw new Exception($"Variable {pop.name} does not contain a valid array");
+                    }
+
+                    if (values.Count == 0)
+                    {
+                        throw new Exception($"Cannot pop from empty array {pop.name}");
+                    }
+
+                    values.RemoveAt(values.Count - 1);
+                }
+
+                else if (s is RedefineVar rd)
+                {
+                    RunTimeVariable variable = GetVariableForRedefinition(rd.name, scope);
+
+                    if (rd.value is NewExpression)
+                    {
+                        variable.value = null;
+                        variable.isInitialized = false;
+
+                        continue;
+                    }
+
+                    object value = Evaluate(rd.value!, scope);
+
+                    CheckType(value, variable.type, variable.isArray);
+
+                    variable.value = value;
+                    variable.isInitialized = true;
+                }
+
+                else if (s is Show sh)
+                {
+                    if (sh.expression is null)
+                    {
+                        Console.Write("");
+                        continue;
+                    }
+
+                    object result = Evaluate(sh.expression, scope);
+
+                    Console.Write(result);
+                }
+
+                else if (s is ShowLn shln)
+                {
+                    if (shln.expression is null)
+                    {
+                        Console.WriteLine();
+                        continue;
+                    }
+
+                    object result = Evaluate(shln.expression, scope);
+
+                    Console.WriteLine(result);
+                }
+
+                else if (s is ReturnStatement r)
+                {
+                    if (r.expression is null)
+                    {
+                        return new ExecResult(ExecFlow.Return);
+                    }
+
+                    object result = Evaluate(r.expression, scope);
+
+                    return new ExecResult(ExecFlow.Return, result);
+                }
+
+                else if (s is BreakStatement)
+                {
+                    return new ExecResult(ExecFlow.Break);
+                }
+
+                else if (s is ContinueStatement)
+                {
+                    return new ExecResult(ExecFlow.Continue);
+                }
+
+                else if (s is IfStatement i)
+                {
+                    object? ifResult = ExecuteIfStatement(i, scope);
+
+                    if (ifResult is ExecResult)
+                    {
+                        return ifResult;
+                    }
+                }
+
+                else if (s is ExpressionStatement exp)
+                {
+                    Evaluate(exp.expression, scope);
+                }
+
+                else if (s is WhileStatement w)
+                {
+                    ExecResult? whileResult = ExecuteWhileStatement(w, scope);
+
+                    if (whileResult is not null)
+                    {
+                        return whileResult;
+                    }
+                }
+
                 else
                 {
                     throw new Exception($"Invalid statement {s}");
@@ -600,11 +873,12 @@ namespace Classes.Interpreter
                 {
                     if (r.expression is null)
                     {
-                        return null;
+                        return new ExecResult(ExecFlow.Return);
                     }
+
                     object result = Evaluate(r.expression, scope);
 
-                    return result;
+                    return new ExecResult(ExecFlow.Return, result);
                 }
                 else if (s is IfStatement i)
                 {
@@ -614,6 +888,19 @@ namespace Classes.Interpreter
                 else if (s is ExpressionStatement exp)
                 {
                     Evaluate(exp.expression);
+                }
+                else if (s is WhileStatement w)
+                {
+                    ExecuteWhileStatement(w, local_variables);
+                }
+                else if (s is BreakStatement)
+                {
+                    return new ExecResult(ExecFlow.Break);
+                }
+
+                else if (s is ContinueStatement)
+                {
+                    return new ExecResult(ExecFlow.Continue);
                 }
                 else
                 {

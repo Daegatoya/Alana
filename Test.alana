@@ -1,3 +1,12 @@
-﻿define num x is parsenum(readln)#
-showln x#
-readk#
+﻿define num x is 0#
+
+define func function()#
+	while x lessthan 5#
+		if x sameas 3#
+			return 10#
+		end#
+		redefine x is x + 1#
+	end#
+end#
+
+showln call function()#

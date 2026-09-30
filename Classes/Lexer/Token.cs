@@ -60,6 +60,11 @@ public enum Type
     PARSEBOOL,
     PARSEDEC,
     PARSECHAR,
+    WHILE,
+    FOR,
+    FOREVERY,
+    CONTINUE,
+    BREAK,
 }
 
 namespace Classes.Lexer

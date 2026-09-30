@@ -50,6 +50,11 @@ namespace Classes.Lexer
             ["parsenum"] = Type.PARSENUM,
             ["parseschar"] = Type.PARSECHAR,
             ["parseboolean"] = Type.PARSEBOOL,
+            ["while"] = Type.WHILE,
+            ["for"] = Type.FOR,
+            ["forevery"] = Type.FOREVERY,
+            ["continue"] = Type.CONTINUE,
+            ["break"] = Type.BREAK,
         };
         private string source { get; }
         private int pos = 0;

@@ -136,9 +136,38 @@ namespace Classes.Parser
                 return ParseAutonomousStatement();
             }
 
+            if (tokens[pos].type == Type.WHILE)
+            {
+                return ParseWhile();
+            }
+
+            if (tokens[pos].type == Type.CONTINUE)
+            {
+                return ParseContinue();
+            }
+
+            if (tokens[pos].type == Type.BREAK)
+            {
+                return ParseBreak();
+            }
+
             Token token = tokens[pos];
 
             throw new AlanaError($"Unexpected token: {token.type} ({token.value})", token.line, token.col, token.source! );
+        }
+
+        private ContinueStatement ParseContinue()
+        {
+            Use(Type.CONTINUE);
+            Use(Type.END);
+            return new ContinueStatement();
+        }
+
+        private BreakStatement ParseBreak()
+        {
+            Use(Type.BREAK);
+            Use(Type.END);
+            return new BreakStatement();
         }
 
         private ExpressionStatement ParseAutonomousStatement()
@@ -202,6 +231,22 @@ namespace Classes.Parser
             Use(Type.EXITFUNC);
             Use(Type.END);
             return new IfStatement(condition, body, elseBody, elseIfStatements);
+        }
+
+        public WhileStatement ParseWhile()
+        {
+            List<Statement> body = new();
+            Use(Type.WHILE);
+            Expression condition = ParseExpression();
+            Use(Type.END);
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement statement = ParseStatement()!;
+                body.Add(statement);
+            }
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+            return new WhileStatement(condition, body);
         }
 
         public PushStatement ParsePush()
