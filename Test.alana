@@ -166,3 +166,5 @@ showln#
 showln "=================================="#
 showln "=== TRYPARSE TEST FINISHED ======="#
 showln "=================================="#
+
+readk#
