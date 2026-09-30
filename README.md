@@ -1,6 +1,6 @@
 # Alana
 ![Alana Logo](alana.ico)
-### Simple language for people who love simple things
+### Write what you mean.
 <hr>
 
 **Introducing Alana**, a simple programming language I started coding for my portfolio.
