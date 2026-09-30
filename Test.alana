@@ -1,170 +1,252 @@
-﻿showln "=== TRYPARSE TORTURE TEST ==="#
+﻿define num base is 10#
+define decimal multiplier is 2.5#
+define str language is "Alana"#
+define schar symbol is 'A'#
+define boolean active is true#
+
+define decimal lastReportValue is new#
+define num processCount is 0#
+
+define num[] history is []#
+
+
+define func calculate(num x, num y)#
+    define num result is x + y#
+
+    if not result lessthan 20#
+        return result#
+    elseif result sameas 15#
+        return result + 5#
+    else#
+        return 0#
+    end#
+end#
+
+
+define func process(num value)#
+    define num bonus is 15#
+    define num calculated is call calculate(value, bonus)#
+
+    redefine processCount is processCount + 1#
+
+    if active and calculated greaterthan 20#
+        define num extra is new#
+
+        redefine extra is calculated + 10#
+        redefine calculated is extra#
+    end#
+
+    push history with calculated#
+
+    return calculated#
+end#
+
+
+define func countdown(num value)#
+    for(define num i is value, i greaterthan 0, redefine i is i - 1)#
+        showln i#
+    end#
+
+    return 0#
+end#
+
+
+define func showHistory(num[] values)#
+    show "History contains "#
+    show length values#
+    showln " values:"#
+
+    forevery(define num value within values)#
+        showln value#
+    end#
+end#
+
+
+define func report(str name, num value)#
+    define num processed is call process(value)#
+    define decimal finalValue is new#
+
+    redefine finalValue is processed times multiplier#
+    redefine lastReportValue is finalValue#
+
+    if not active or finalValue lessthan 50#
+        showln "Processing inactive or too small"#
+    else#
+        showln name#
+        showln finalValue#
+        showln language#
+        showln symbol#
+    end#
+
+    return finalValue#
+end#
+
+
+show "Enter your name: "#
+define str userName is readln#
+
+show "Hello "#
+showln userName#
 showln#
 
 
-showln "--- TEST 1: TRYPARSENUM SUCCESS ---"#
+define num userValue is new#
+define boolean numberParsed is false#
 
-define num numValue is new#
-define boolean numSuccess is false#
+while not numberParsed#
+    show "Enter a number: "#
 
-tryparsenum("123", numValue, numSuccess)#
+    tryparsenum(readln, userValue, numberParsed)#
 
-showln numSuccess#
-showln numValue#
+    if not numberParsed#
+        showln "Invalid number, please try again."#
+    end#
+end#
 
-showln "EXPECTED: True / 123"#
+show "Parsed value: "#
+showln userValue#
 showln#
 
 
-showln "--- TEST 2: TRYPARSENUM FAILURE ---"#
+define num result is call calculate(base, userValue)#
+define decimal reportResult is call report("Calculation result:", result)#
 
-define num failedNum is 777#
-define boolean failedNumSuccess is true#
+show "Calculation result: "#
+showln result#
 
-tryparsenum("Alana", failedNum, failedNumSuccess)#
+show "Report result: "#
+showln reportResult#
 
-showln failedNumSuccess#
-showln failedNum#
-
-showln "EXPECTED: False / 777"#
 showln#
 
 
-showln "--- TEST 3: TRYPARSENUM NEW FAILURE ---"#
+showln "Countdown:"#
+call countdown(5)#
 
-define num newNum is new#
-define boolean newNumSuccess is true#
-
-tryparsenum("nope", newNum, newNumSuccess)#
-
-showln newNumSuccess#
-
-showln "EXPECTED: False"#
-showln "NOTE: newNum should still be uninitialized"#
 showln#
 
 
-showln "--- TEST 4: TRYPARSEDECIMAL SUCCESS ---"#
+showln "Processing 50:"#
+showln call process(50)#
 
-define decimal decimalValue is new#
-define boolean decimalSuccess is false#
-
-tryparsedecimal("12.5", decimalValue, decimalSuccess)#
-
-showln decimalSuccess#
-showln decimalValue#
-
-showln "EXPECTED: True / 12.5-ish"#
 showln#
 
 
-showln "--- TEST 5: TRYPARSEDECIMAL FAILURE ---"#
+show "Last report value: "#
+showln lastReportValue#
 
-define decimal failedDecimal is 42.5#
-define boolean failedDecimalSuccess is true#
+show "Process count: "#
+showln processCount#
 
-tryparsedecimal("banana", failedDecimal, failedDecimalSuccess)#
-
-showln failedDecimalSuccess#
-showln failedDecimal#
-
-showln "EXPECTED: False / 42.5-ish"#
 showln#
 
 
-showln "--- TEST 6: TRYPARSEBOOLEAN TRUE ---"#
+showln "History before modifications:"#
+call showHistory(history)#
 
-define boolean boolValue is false#
-define boolean boolSuccess is false#
-
-tryparseboolean("true", boolValue, boolSuccess)#
-
-showln boolSuccess#
-showln boolValue#
-
-showln "EXPECTED: True / True"#
 showln#
 
 
-showln "--- TEST 7: TRYPARSEBOOLEAN FALSE VALUE ---"#
+if length history greaterthan 0#
+    redefine history[0] is 100#
+end#
 
-redefine boolValue is true#
-redefine boolSuccess is false#
+push history with 200#
 
-tryparseboolean("false", boolValue, boolSuccess)#
+showln "History after redefine and push:"#
+call showHistory(history)#
 
-showln boolSuccess#
-showln boolValue#
+pop history#
 
-showln "EXPECTED: True / False"#
+showln "History after pop:"#
+call showHistory(history)#
+
 showln#
 
 
-showln "--- TEST 8: TRYPARSEBOOLEAN FAILURE ---"#
+define str processCountText is parsestr(processCount)#
 
-redefine boolValue is true#
-redefine boolSuccess is true#
+show "Process count as string: "#
+showln processCountText#
 
-tryparseboolean("maybe", boolValue, boolSuccess)#
-
-showln boolSuccess#
-showln boolValue#
-
-showln "EXPECTED: False / True"#
 showln#
 
 
-showln "--- TEST 9: TRYPARSESCHAR SUCCESS ---"#
+showln "=== TryParse examples ==="#
 
-define schar charValue is 'X'#
-define boolean charSuccess is false#
+define decimal parsedDecimal is new#
+define boolean decimalParsed is false#
 
-tryparseschar("A", charValue, charSuccess)#
+tryparsedecimal("25.75", parsedDecimal, decimalParsed)#
 
-showln charSuccess#
-showln charValue#
+if decimalParsed#
+    show "Parsed decimal: "#
+    showln parsedDecimal#
+else#
+    showln "Decimal parsing failed"#
+end#
 
-showln "EXPECTED: True / A"#
+
+define boolean parsedBoolean is false#
+define boolean booleanParsed is false#
+
+tryparseboolean("true", parsedBoolean, booleanParsed)#
+
+if booleanParsed#
+    show "Parsed boolean: "#
+    showln parsedBoolean#
+else#
+    showln "Boolean parsing failed"#
+end#
+
+
+define schar parsedChar is new#
+define boolean charParsed is false#
+
+tryparseschar("Z", parsedChar, charParsed)#
+
+if charParsed#
+    show "Parsed character: "#
+    showln parsedChar#
+else#
+    showln "Character parsing failed"#
+end#
+
 showln#
 
 
-showln "--- TEST 10: TRYPARSESCHAR FAILURE ---"#
+showln "=== History with FOREVERY ==="#
 
-redefine charValue is 'Z'#
-redefine charSuccess is true#
+forevery(define num value within history)#
+    if value lessthan 50#
+        continue#
+    end#
 
-tryparseschar("ABC", charValue, charSuccess)#
+    show "Large value: "#
+    showln value#
+end#
 
-showln charSuccess#
-showln charValue#
-
-showln "EXPECTED: False / Z"#
 showln#
 
 
-showln "--- TEST 11: REUSE SAME SUCCESS VARIABLE ---"#
+showln "=== FOR with BREAK ==="#
 
-define boolean success is false#
-define num reusableNum is new#
-define decimal reusableDecimal is new#
+for(define num i is 0, i lessthan 10, redefine i is i + 1)#
+    if i sameas 5#
+        break#
+    end#
 
-tryparsenum("50", reusableNum, success)#
-showln success#
-showln reusableNum#
+    showln i#
+end#
 
-tryparsedecimal("bad", reusableDecimal, success)#
-showln success#
-
-tryparsedecimal("25.75", reusableDecimal, success)#
-showln success#
-showln reusableDecimal#
-
-showln "EXPECTED: True / 50 / False / True / 25.75-ish"#
 showln#
 
 
-showln "=================================="#
-showln "=== TRYPARSE TEST FINISHED ======="#
-showln "=================================="#
+show "Press any key to finish: "#
+define schar exitKey is readk#
 
-readk#
+showln#
+show "You pressed: "#
+showln exitKey#
+
+showln "Done."#
