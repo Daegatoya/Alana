@@ -1,6 +1,7 @@
 # Alana
 ![Alana Logo](alana.ico)
 ### Write what you mean.
+> Check out the official [Alana website](https://csalana.com)
 <hr>
 
 **Introducing Alana**, a simple programming language I started coding for my portfolio.
