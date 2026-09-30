@@ -522,4 +522,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026 | Alana v0.4
+> Copyright © Daegatoya - 2026 | Alana v0.5
