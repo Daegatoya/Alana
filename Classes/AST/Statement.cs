@@ -8,6 +8,9 @@ namespace Classes.AST
 {
     public abstract class Statement
     {
+        public int line, col;
+        public string? source = string.Empty;
+
         public Statement()
         {
 

@@ -55,6 +55,7 @@ namespace Classes.Lexer
             ["forevery"] = Type.FOREVERY,
             ["continue"] = Type.CONTINUE,
             ["break"] = Type.BREAK,
+            ["within"] = Type.WITHIN,
         };
         private string source { get; }
         private int pos = 0;

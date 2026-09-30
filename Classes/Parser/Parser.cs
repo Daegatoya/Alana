@@ -1,20 +1,18 @@
 ﻿using Classes.AST;
 using Classes.AST.Expressions;
 using Classes.AST.Models;
+using Classes.Handler;
 using Classes.Lexer;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Classes.Handler;
-using System.Windows.Markup;
 
 namespace Classes.Parser
 {
     public class Parser
     {
+        #region Declaration & Parser Base
         private Token[] tokens;
         private int pos = 0;
 
@@ -41,9 +39,23 @@ namespace Classes.Parser
             return token;
         }
 
-        public List<Statement>? Parse()
+        private void SetPos(Statement statement, Token token)
         {
-            List<Statement>? results = new();
+            statement.line = token.line;
+            statement.col = token.col;
+            statement.source = token.source;
+        }
+
+        private void SetPos(Expression expression, Token token)
+        {
+            expression.line = token.line;
+            expression.col = token.col;
+            expression.source = token.source;
+        }
+
+        public List<Statement> Parse()
+        {
+            List<Statement> results = new();
 
             while(pos < tokens.Length)
             {
@@ -60,6 +72,19 @@ namespace Classes.Parser
 
         public Statement? ParseStatement()
         {
+            Token start = tokens[pos];
+            Statement? statement = ParseMatchedStatement();
+
+            if (statement is not null)
+            {
+                SetPos(statement, start);
+            }
+
+            return statement;
+        }
+
+        private Statement? ParseMatchedStatement()
+        {
             if (tokens[pos].type == Type.CALL)
             {
                 FuncCall call = ParseFuncCall();
@@ -68,7 +93,7 @@ namespace Classes.Parser
             }
             if (tokens[pos].type == Type.DEFINE && tokens[pos+1].type == Type.NUM)
             {
-                return ParseNumVariable();
+                return ParseVariable(Type.NUM, VarType.NUM);
             }
 
             else if (tokens[pos].type == Type.SHOWLN)
@@ -78,7 +103,7 @@ namespace Classes.Parser
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.STR)
             {
-                return ParseStrVariable();
+                return ParseVariable(Type.STR, VarType.STR);
             }
 
             else if (tokens[pos].type == Type.PUSH)
@@ -93,17 +118,17 @@ namespace Classes.Parser
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.BOOL)
             {
-                return ParseBoolVariable();
+                return ParseVariable(Type.BOOL, VarType.BOOL);
             }
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DECIMAL)
             {
-                return ParseDecimalVariable();
+                return ParseVariable(Type.DECIMAL, VarType.DECIMAL);
             }
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.CHAR)
             {
-                return ParseCharVariable();
+                return ParseVariable(Type.CHAR, VarType.CHAR);
             }
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
@@ -141,6 +166,16 @@ namespace Classes.Parser
                 return ParseWhile();
             }
 
+            if (tokens[pos].type == Type.FOR)
+            {
+                return ParseFor();
+            }
+
+            if (tokens[pos].type == Type.FOREVERY)
+            {
+                return ParseForEvery();
+            }
+
             if (tokens[pos].type == Type.CONTINUE)
             {
                 return ParseContinue();
@@ -155,7 +190,91 @@ namespace Classes.Parser
 
             throw new AlanaError($"Unexpected token: {token.type} ({token.value})", token.line, token.col, token.source! );
         }
+        #endregion
 
+        #region Statement Parsers
+
+        #region Variables Parsers
+        private Expression ParseConversion()
+        {
+            Token conversion = Use(Type.PARSENUM, Type.PARSESTR, Type.PARSEBOOL, Type.PARSECHAR, Type.PARSEDEC);
+            Use(Type.OPEN);
+            Expression exp = ParseExpression();
+            Use(Type.CLOSE);
+
+            Expression parsed = conversion.type switch
+            {
+                Type.PARSENUM => new ParseNum(exp),
+                Type.PARSESTR => new ParseString(exp),
+                Type.PARSEBOOL => new ParseBool(exp),
+                Type.PARSECHAR => new ParseChar(exp),
+                _ => new ParseDecimal(exp)
+            };
+
+            SetPos(parsed, conversion);
+            return parsed;
+        }
+
+        private DefineVar ParseVariable(Type typeToken, VarType type, Type terminator = Type.END)
+        {
+            Use(Type.DEFINE);
+            Use(typeToken);
+            bool isArray = ParseArrayType();
+            Token name = Use(Type.VAR);
+            Use(Type.EQUAL);
+            Expression? value = ParseExpression();
+            Use(terminator);
+
+            return new DefineVar(name.value!, type, value, isArray);
+        }
+
+        public Statement ParseRedefine(Type terminator = Type.END)
+        {
+            Use(Type.REDEFINE);
+            Token name = Use(Type.VAR);
+
+            if (tokens[pos].type == Type.OPENARRAY)
+            {
+                Use(Type.OPENARRAY);
+
+                Expression index = ParseExpression();
+
+                Use(Type.CLOSEARRAY);
+                Use(Type.EQUAL);
+
+                Expression value = ParseExpression();
+
+                Use(terminator);
+
+                return new RedefineArrElement(name.value!, index, value);
+            }
+
+            Use(Type.EQUAL);
+
+            Expression normalValue = ParseExpression();
+
+            Use(terminator);
+
+            return new RedefineVar(name.value!, normalValue);
+        }
+
+        private VarType ParseVarType(Token type_Token, string target)
+        {
+            return type_Token.type switch
+            {
+                Type.NUM => VarType.NUM,
+                Type.STR => VarType.STR,
+                Type.CHAR => VarType.CHAR,
+                Type.DECIMAL => VarType.DECIMAL,
+                Type.BOOL => VarType.BOOL,
+
+                _ => throw new AlanaError($"Invalid type parsed for {target}", type_Token.line, type_Token.col, type_Token.source!
+                )
+            };
+        }
+        #endregion
+
+        #region Return Parsers
         private ContinueStatement ParseContinue()
         {
             Use(Type.CONTINUE);
@@ -170,6 +289,16 @@ namespace Classes.Parser
             return new BreakStatement();
         }
 
+        public ReturnStatement ParseReturn()
+        {
+            Use(Type.RETURN);
+            Expression? expression = ParseExpression();
+            Use(Type.END);
+            return new ReturnStatement(expression);
+        }
+        #endregion
+
+        #region Autonomous & Unary Parser
         private ExpressionStatement ParseAutonomousStatement()
         {
             Expression expr = ParseExpression();
@@ -181,13 +310,17 @@ namespace Classes.Parser
         {
             if (tokens[pos].type == Type.NOT)
             {
-                Use(Type.NOT);
-                return new NotExpression(ParseUnaryExpression());
+                Token not = Use(Type.NOT);
+                NotExpression result = new NotExpression(ParseUnaryExpression());
+                SetPos(result, not);
+                return result;
             }
 
             return ParseComparisonExpression();
         }
+        #endregion
 
+        #region If Statements Parser
         public IfStatement ParseIfStatement()
         {
             List<Statement> body = new();
@@ -201,7 +334,6 @@ namespace Classes.Parser
                 Statement statement = ParseStatement()!;
                 body.Add(statement);
             }
-            if(pos < tokens.Length && tokens[pos].type == Type.ELSEIF) elseIfStatements = new();
             while (pos < tokens.Length && tokens[pos].type == Type.ELSEIF)
             {
                 Use(Type.ELSEIF);
@@ -215,6 +347,11 @@ namespace Classes.Parser
                     elseIfBody.Add(eiStatement);
                 }
 
+                if (elseIfStatements == null)
+                {
+                    elseIfStatements = new();
+                }
+
                 elseIfStatements.Add(new ElseIfStatement(elseIfCondition, elseIfBody));
             }
             if(pos < tokens.Length && tokens[pos].type == Type.ELSE)
@@ -225,14 +362,16 @@ namespace Classes.Parser
                 while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
                 {
                     Statement eStatement = ParseStatement()!;
-                    elseBody!.Add(eStatement);
+                    elseBody.Add(eStatement);
                 }
             }
             Use(Type.EXITFUNC);
             Use(Type.END);
             return new IfStatement(condition, body, elseBody, elseIfStatements);
         }
+        #endregion
 
+        #region Loops Parsers
         public WhileStatement ParseWhile()
         {
             List<Statement> body = new();
@@ -249,29 +388,71 @@ namespace Classes.Parser
             return new WhileStatement(condition, body);
         }
 
-        public PushStatement ParsePush()
+        public ForStatement ParseFor()
         {
-            Use(Type.PUSH);
-            Token name = Use(Type.VAR);
-            Use(Type.WITH);
-            Expression value = ParseExpression();
+            List<Statement> body = new();
+            Use(Type.FOR);
+            Use(Type.OPEN);
+
+            Token type_Init = tokens[pos + 1];
+            VarType type_Parsed = ParseVarType(type_Init, "the for loop variable");
+
+            DefineVar initialization = ParseVariable(type_Init.type, type_Parsed, Type.COMA);
+
+            Expression condition = ParseExpression();
+            Use(Type.COMA);
+
+            Statement step = ParseRedefine(Type.CLOSE);
+
             Use(Type.END);
-            return new PushStatement(name.value!, value);
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement statement = ParseStatement()!;
+                body.Add(statement);
+            }
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+            return new ForStatement(initialization, condition, step, body);
         }
 
-        public PopStatement ParsePop()
+        public ForEveryStatement ParseForEvery()
         {
-            Use(Type.POP);
-            Token name = Use(Type.VAR);
-            Use(Type.END);
-            return new PopStatement(name.value!);
-        }
+            List<Statement> body = new();
+            Use(Type.FOREVERY);
+            Use(Type.OPEN);
+            Use(Type.DEFINE);
 
+            Token type_Element = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL);
+
+            bool isArray = ParseArrayType();
+
+            Token name = Use(Type.VAR);
+
+            VarType type_Parsed = ParseVarType(type_Element, $"the forevery variable {name.value}");
+
+            Use(Type.WITHIN);
+
+            Token array = Use(Type.VAR);
+
+            Use(Type.CLOSE);
+            Use(Type.END);
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement statement = ParseStatement()!;
+                body.Add(statement);
+            }
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+            return new ForEveryStatement(name.value!, type_Parsed, isArray, array.value!, body);
+        }
+        #endregion
+
+        #region Functions Parsers
         public FuncCall ParseFuncCall()
         {
             List<Expression> expressions = new();
 
-            Use(Type.CALL);
+            Token call = Use(Type.CALL);
             Token name = Use(Type.VAR);
             Use(Type.OPEN);
 
@@ -287,171 +468,9 @@ namespace Classes.Parser
 
             Use(Type.CLOSE);
 
-            return new FuncCall(name.value!, expressions);
-        }
-        public ReturnStatement ParseReturn()
-        {
-            Use(Type.RETURN);
-            Expression? expression = ParseExpression();
-            Use(Type.END);
-            return new ReturnStatement(expression);
-
-        }
-
-        public bool ParseArrayType()
-        {
-            if (tokens[pos].type == Type.OPENARRAY)
-            {
-                Use(Type.OPENARRAY);
-                Use(Type.CLOSEARRAY);
-                return true;
-            }
-            return false;
-        }
-
-        public ParseNum ParseNumParser()
-        {
-            Use(Type.PARSENUM);
-            Use(Type.OPEN);
-            Expression exp = ParseExpression();
-            Use(Type.CLOSE);
-
-            return new ParseNum(exp);
-        }
-
-        public ParseString ParseStrParser()
-        {
-            Use(Type.PARSESTR);
-            Use(Type.OPEN);
-            Expression exp = ParseExpression();
-            Use(Type.CLOSE);
-
-            return new ParseString(exp);
-        }
-
-        public ParseBool ParseBoolParser()
-        {
-            Use(Type.PARSEBOOL);
-            Use(Type.OPEN);
-            Expression exp = ParseExpression();
-            Use(Type.CLOSE);
-
-            return new ParseBool(exp);
-        }
-
-        public ParseChar ParseCharParser()
-        {
-            Use(Type.PARSECHAR);
-            Use(Type.OPEN);
-            Expression exp = ParseExpression();
-            Use(Type.CLOSE);
-
-            return new ParseChar(exp);
-        }
-
-        public ParseDecimal ParseDecimalParser()
-        {
-            Use(Type.PARSEDEC);
-            Use(Type.OPEN);
-            Expression exp = ParseExpression();
-            Use(Type.CLOSE);
-
-            return new ParseDecimal(exp);
-        }
-
-        public DefineVar ParseNumVariable()
-        {
-            Use(Type.DEFINE);
-            Use(Type.NUM);
-            bool isArray = ParseArrayType();
-            Token name = Use(Type.VAR);
-            Use(Type.EQUAL);
-            Expression? value = ParseExpression();
-            Use(Type.END);
-
-            return new DefineVar(name.value!, VarType.NUM, value, isArray);
-        }
-
-        public DefineVar ParseDecimalVariable()
-        {
-            Use(Type.DEFINE);
-            Use(Type.DECIMAL);
-            bool isArray = ParseArrayType();
-            Token name = Use(Type.VAR);
-            Use(Type.EQUAL);
-            Expression? value = ParseExpression();
-            Use(Type.END);
-
-            return new DefineVar(name.value!, VarType.DECIMAL, value, isArray);
-        }
-
-        public DefineVar ParseBoolVariable()
-        {
-            Use(Type.DEFINE);
-            Use(Type.BOOL);
-            bool isArray = ParseArrayType();
-            Token name = Use(Type.VAR);
-            Use(Type.EQUAL);
-            Expression? value = ParseExpression();
-            Use(Type.END);
-
-            return new DefineVar(name.value!, VarType.BOOL, value, isArray);
-        }
-
-        public DefineVar ParseCharVariable()
-        {
-            Use(Type.DEFINE);
-            Use(Type.CHAR);
-            bool isArray = ParseArrayType();
-            Token name = Use(Type.VAR);
-            Use(Type.EQUAL);
-            Expression? value = ParseExpression();
-            Use(Type.END);
-
-            return new DefineVar(name.value!, VarType.CHAR, value, isArray);
-        }
-
-        public DefineVar ParseStrVariable()
-        {
-            Use(Type.DEFINE);
-            Use(Type.STR);
-            bool isArray = ParseArrayType();
-            Token name = Use(Type.VAR);
-            Use(Type.EQUAL);
-            Expression? value = ParseExpression();
-            Use(Type.END);
-
-            return new DefineVar(name.value!, VarType.STR, value, isArray);
-        }
-
-        public Statement ParseRedefine()
-        {
-            Use(Type.REDEFINE);
-            Token name = Use(Type.VAR);
-
-            if (tokens[pos].type == Type.OPENARRAY)
-            {
-                Use(Type.OPENARRAY);
-
-                Expression index = ParseExpression();
-
-                Use(Type.CLOSEARRAY);
-                Use(Type.EQUAL);
-
-                Expression value = ParseExpression();
-
-                Use(Type.END);
-
-                return new RedefineArrElement(name.value!, index, value);
-            }
-
-            Use(Type.EQUAL);
-
-            Expression normalValue = ParseExpression();
-
-            Use(Type.END);
-
-            return new RedefineVar(name.value!, normalValue);
+            FuncCall result = new FuncCall(name.value!, expressions);
+            SetPos(result, call);
+            return result;
         }
 
         public DefFunction ParseFunction()
@@ -474,17 +493,7 @@ namespace Classes.Parser
 
                 Token name_Param = Use(Type.VAR);
 
-                VarType type_Parsed = type_Param.type switch
-                {
-                    Type.NUM => VarType.NUM,
-                    Type.STR => VarType.STR,
-                    Type.CHAR => VarType.CHAR,
-                    Type.DECIMAL => VarType.DECIMAL,
-                    Type.BOOL => VarType.BOOL,
-
-                    _ => throw new AlanaError($"Invalid type parsed for parameter {name_Param.value}", type_Param.line, type_Param.col, type_Param.source!
-                    )
-                };
+                VarType type_Parsed = ParseVarType(type_Param, $"parameter {name_Param.value}");
 
                 @params.Add(
                     new Param(
@@ -514,7 +523,9 @@ namespace Classes.Parser
 
             return new DefFunction(name.value!, @params, body);
         }
+        #endregion
 
+        #region Show/ShowLN Parsers
         public Statement ParseShow()
         {
             Use(Type.SHOW);
@@ -542,11 +553,13 @@ namespace Classes.Parser
 
             return new ShowLn(expression);
         }
+        #endregion
 
+        #region Array Parsers
         public ArrayExpression ParseArrayExpression()
         {
             List<Expression> values = new();
-            Use(Type.OPENARRAY);
+            Token open = Use(Type.OPENARRAY);
             while (pos < tokens.Length && tokens[pos].type != Type.CLOSEARRAY)
             {
                 Expression value = ParseExpression();
@@ -559,47 +572,92 @@ namespace Classes.Parser
             }
 
             Use(Type.CLOSEARRAY);
-            return new ArrayExpression(values);
+            ArrayExpression result = new ArrayExpression(values);
+            SetPos(result, open);
+            return result;
         }
 
+        public bool ParseArrayType()
+        {
+            if (tokens[pos].type == Type.OPENARRAY)
+            {
+                Use(Type.OPENARRAY);
+                Use(Type.CLOSEARRAY);
+                return true;
+            }
+            return false;
+        }
+
+        public PushStatement ParsePush()
+        {
+            Use(Type.PUSH);
+            Token name = Use(Type.VAR);
+            Use(Type.WITH);
+            Expression value = ParseExpression();
+            Use(Type.END);
+            return new PushStatement(name.value!, value);
+        }
+
+        public PopStatement ParsePop()
+        {
+            Use(Type.POP);
+            Token name = Use(Type.VAR);
+            Use(Type.END);
+            return new PopStatement(name.value!);
+        }
+        #endregion
+
+        #endregion
+
+        #region Value Parsers
         private Expression ParseValue()
         {
             if (tokens[pos].type == Type.READLN)
             {
-                Use(Type.READLN);
-                return new ReadLine();
+                Token readln = Use(Type.READLN);
+                ReadLine result = new ReadLine();
+                SetPos(result, readln);
+                return result;
             }
 
             if (tokens[pos].type == Type.READK)
             {
-                Use(Type.READK);
-                return new ReadKey();
+                Token readk = Use(Type.READK);
+                ReadKey result = new ReadKey();
+                SetPos(result, readk);
+                return result;
             }
 
             if (tokens[pos].type == Type.LENGTH)
             {
-                Use(Type.LENGTH);
+                Token length = Use(Type.LENGTH);
                 Token name = Use(Type.VAR);
 
-                return new Length(name.value!);
+                Length result = new Length(name.value!);
+                SetPos(result, length);
+                return result;
             }
 
             if (tokens[pos].type == Type.OPENCLOSESTR)
             {
-                Use(Type.OPENCLOSESTR);
+                Token open = Use(Type.OPENCLOSESTR);
                 Token value = Use(Type.STRING);
                 Use(Type.OPENCLOSESTR);
 
-                return new StringExpression(value.value!);
+                StringExpression result = new StringExpression(value.value!);
+                SetPos(result, open);
+                return result;
             }
 
             if (tokens[pos].type == Type.OPENCLOSECHAR)
             {
-                Use(Type.OPENCLOSECHAR);
+                Token open = Use(Type.OPENCLOSECHAR);
                 Token value = Use(Type.CHAR);
                 Use(Type.OPENCLOSECHAR);
 
-                return new CharExpression(char.Parse(value.value!));
+                CharExpression result = new CharExpression(char.Parse(value.value!));
+                SetPos(result, open);
+                return result;
             }
 
             if (tokens[pos].type == Type.OPENARRAY)
@@ -612,29 +670,9 @@ namespace Classes.Parser
                 return ParseFuncCall();
             }
 
-            if (tokens[pos].type == Type.PARSEBOOL)
+            if (tokens[pos].type == Type.PARSEBOOL || tokens[pos].type == Type.PARSENUM || tokens[pos].type == Type.PARSESTR || tokens[pos].type == Type.PARSEDEC || tokens[pos].type == Type.PARSECHAR)
             {
-                return ParseBoolParser();
-            }
-
-            if (tokens[pos].type == Type.PARSENUM)
-            {
-                return ParseNumParser();
-            }
-
-            if (tokens[pos].type == Type.PARSESTR)
-            {
-                return ParseStrParser();
-            }
-
-            if (tokens[pos].type == Type.PARSEDEC)
-            {
-                return ParseDecimalParser();
-            }
-
-            if (tokens[pos].type == Type.PARSECHAR)
-            {
-                return ParseCharParser();
+                return ParseConversion();
             }
 
             Token token = Use(Type.VAR, Type.DIGIT, Type.DECIMAL_NUM, Type.NEW);
@@ -647,27 +685,39 @@ namespace Classes.Parser
                     Use(Type.OPENARRAY);
                     Expression index = ParseExpression();
                     Use(Type.CLOSEARRAY);
-                    return new ArrayAccessExpression(name.value!, index);
+                    ArrayAccessExpression access = new ArrayAccessExpression(name.value!, index);
+                    SetPos(access, name);
+                    return access;
                 }
                 if (bool.TryParse(token.value!, out bool boolValue))
                 {
-                    return new BoolExpression(boolValue);
+                    BoolExpression boolean = new BoolExpression(boolValue);
+                    SetPos(boolean, token);
+                    return boolean;
                 }
 
-                return new VarExpression(token.value!);
+                VarExpression variable = new VarExpression(token.value!);
+                SetPos(variable, token);
+                return variable;
             }
 
             if (token.type == Type.DECIMAL_NUM)
             {
-                return new DecimalExpression(decimal.Parse(token.value!, CultureInfo.InvariantCulture));
+                DecimalExpression decimalValue = new DecimalExpression(decimal.Parse(token.value!, CultureInfo.InvariantCulture));
+                SetPos(decimalValue, token);
+                return decimalValue;
             }
 
             if (token.type == Type.NEW)
             {
-                return new NewExpression();
+                NewExpression newExpression = new NewExpression();
+                SetPos(newExpression, token);
+                return newExpression;
             }
 
-            return new NumberExpression(int.Parse(token.value!));
+            NumberExpression number = new NumberExpression(int.Parse(token.value!));
+            SetPos(number, token);
+            return number;
         }
 
         private Expression ParseComparisonExpression()
@@ -676,7 +726,8 @@ namespace Classes.Parser
 
             while (tokens[pos].type != Type.END && tokens[pos].type != Type.COMA && tokens[pos].type != Type.CLOSE && tokens[pos].type != Type.AND && tokens[pos].type != Type.OR && tokens[pos].type != Type.CLOSEARRAY)
             {
-                Type operation = tokens[pos].type;
+                Token opToken = tokens[pos];
+                Type operation = opToken.type;
                 Use(operation);
 
                 Expression right = ParseValue();
@@ -723,6 +774,8 @@ namespace Classes.Parser
                         Token token = tokens[pos];
                         throw new AlanaError($"Unexpected operator: {operation}", token.line, token.col, token.source!);
                 }
+
+                SetPos(left, opToken);
             }
 
             return left;
@@ -734,7 +787,8 @@ namespace Classes.Parser
 
             while (tokens[pos].type == Type.AND || tokens[pos].type == Type.OR)
             {
-                Type operation = tokens[pos].type;
+                Token opToken = tokens[pos];
+                Type operation = opToken.type;
                 Use(operation);
 
                 Expression right = ParseUnaryExpression();
@@ -747,10 +801,13 @@ namespace Classes.Parser
                 {
                     left = new OrExpression(left, right);
                 }
+
+                SetPos(left, opToken);
             }
 
             return left;
         }
+        #endregion
     }
 }
 

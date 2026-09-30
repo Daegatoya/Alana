@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Classes.Interpreter
+namespace Classes.Runtime
 {
     public enum ExecFlow
     {

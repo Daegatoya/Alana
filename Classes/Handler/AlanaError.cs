@@ -20,7 +20,8 @@ namespace Classes.Handler
 
         public override string ToString()
         {
-            string pointer = new string(' ', col - 1) + "^";
+            int spaces = col > 0 ? col - 1 : 0;
+            string pointer = new string(' ', spaces) + "^";
 
             return $"Alana: at line {line}, column {col}:\n" +
                    $"\t{source}\n" +
