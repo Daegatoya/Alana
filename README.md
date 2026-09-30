@@ -4,7 +4,7 @@
 > Check out the official [Alana website](https://csalana.com)
 <hr>
 
-**Introducing Alana**, a simple programming language I started coding for my portfolio.
+**Introducing Alana**, a programming language I started coding for my portfolio.
 Alana source files use the .alana extension and there's a command-line interface to execute commands.
 
 When launching alana.bat (or simply adding it to your environment variables, which will be done automatically with the Inno installer when I make it), you will simply need to type:
