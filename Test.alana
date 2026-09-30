@@ -1,1 +1,168 @@
-﻿
+﻿showln "=== TRYPARSE TORTURE TEST ==="#
+showln#
+
+
+showln "--- TEST 1: TRYPARSENUM SUCCESS ---"#
+
+define num numValue is new#
+define boolean numSuccess is false#
+
+tryparsenum("123", numValue, numSuccess)#
+
+showln numSuccess#
+showln numValue#
+
+showln "EXPECTED: True / 123"#
+showln#
+
+
+showln "--- TEST 2: TRYPARSENUM FAILURE ---"#
+
+define num failedNum is 777#
+define boolean failedNumSuccess is true#
+
+tryparsenum("Alana", failedNum, failedNumSuccess)#
+
+showln failedNumSuccess#
+showln failedNum#
+
+showln "EXPECTED: False / 777"#
+showln#
+
+
+showln "--- TEST 3: TRYPARSENUM NEW FAILURE ---"#
+
+define num newNum is new#
+define boolean newNumSuccess is true#
+
+tryparsenum("nope", newNum, newNumSuccess)#
+
+showln newNumSuccess#
+
+showln "EXPECTED: False"#
+showln "NOTE: newNum should still be uninitialized"#
+showln#
+
+
+showln "--- TEST 4: TRYPARSEDECIMAL SUCCESS ---"#
+
+define decimal decimalValue is new#
+define boolean decimalSuccess is false#
+
+tryparsedecimal("12.5", decimalValue, decimalSuccess)#
+
+showln decimalSuccess#
+showln decimalValue#
+
+showln "EXPECTED: True / 12.5-ish"#
+showln#
+
+
+showln "--- TEST 5: TRYPARSEDECIMAL FAILURE ---"#
+
+define decimal failedDecimal is 42.5#
+define boolean failedDecimalSuccess is true#
+
+tryparsedecimal("banana", failedDecimal, failedDecimalSuccess)#
+
+showln failedDecimalSuccess#
+showln failedDecimal#
+
+showln "EXPECTED: False / 42.5-ish"#
+showln#
+
+
+showln "--- TEST 6: TRYPARSEBOOLEAN TRUE ---"#
+
+define boolean boolValue is false#
+define boolean boolSuccess is false#
+
+tryparseboolean("true", boolValue, boolSuccess)#
+
+showln boolSuccess#
+showln boolValue#
+
+showln "EXPECTED: True / True"#
+showln#
+
+
+showln "--- TEST 7: TRYPARSEBOOLEAN FALSE VALUE ---"#
+
+redefine boolValue is true#
+redefine boolSuccess is false#
+
+tryparseboolean("false", boolValue, boolSuccess)#
+
+showln boolSuccess#
+showln boolValue#
+
+showln "EXPECTED: True / False"#
+showln#
+
+
+showln "--- TEST 8: TRYPARSEBOOLEAN FAILURE ---"#
+
+redefine boolValue is true#
+redefine boolSuccess is true#
+
+tryparseboolean("maybe", boolValue, boolSuccess)#
+
+showln boolSuccess#
+showln boolValue#
+
+showln "EXPECTED: False / True"#
+showln#
+
+
+showln "--- TEST 9: TRYPARSESCHAR SUCCESS ---"#
+
+define schar charValue is 'X'#
+define boolean charSuccess is false#
+
+tryparseschar("A", charValue, charSuccess)#
+
+showln charSuccess#
+showln charValue#
+
+showln "EXPECTED: True / A"#
+showln#
+
+
+showln "--- TEST 10: TRYPARSESCHAR FAILURE ---"#
+
+redefine charValue is 'Z'#
+redefine charSuccess is true#
+
+tryparseschar("ABC", charValue, charSuccess)#
+
+showln charSuccess#
+showln charValue#
+
+showln "EXPECTED: False / Z"#
+showln#
+
+
+showln "--- TEST 11: REUSE SAME SUCCESS VARIABLE ---"#
+
+define boolean success is false#
+define num reusableNum is new#
+define decimal reusableDecimal is new#
+
+tryparsenum("50", reusableNum, success)#
+showln success#
+showln reusableNum#
+
+tryparsedecimal("bad", reusableDecimal, success)#
+showln success#
+
+tryparsedecimal("25.75", reusableDecimal, success)#
+showln success#
+showln reusableDecimal#
+
+showln "EXPECTED: True / 50 / False / True / 25.75-ish"#
+showln#
+
+
+showln "=================================="#
+showln "=== TRYPARSE TEST FINISHED ======="#
+showln "=================================="#

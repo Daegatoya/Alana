@@ -87,5 +87,98 @@ namespace Classes.Runtime
         {
             return value.ToString()!;
         }
+
+        public static bool TryToNum(object value, out int result)
+        {
+            result = 0;
+
+            if (value is not string && value is not char && value is not int)
+            {
+                return false;
+            }
+
+            if (int.TryParse(value.ToString(), out result))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool TryToDecimal(object value, out decimal result)
+        {
+            result = 0;
+
+            if (value is not string && value is not char && value is not decimal && value is not int)
+            {
+                return false;
+            }
+
+            if (value is decimal)
+            {
+                result = (decimal)value;
+                return true;
+            }
+            else if (value is int)
+            {
+                result = Convert.ToDecimal(value);
+                return true;
+            }
+            else if (value is string || value is char)
+            {
+                if (decimal.TryParse(value.ToString(), CultureInfo.InvariantCulture, out result))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool TryToBool(object value, out bool result)
+        {
+            result = false;
+
+            if (value is not string && value is not bool)
+            {
+                return false;
+            }
+
+            if (bool.TryParse(value.ToString(), out result))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool TryToChar(object value, out char result)
+        {
+            result = '\0';
+
+            if (value is not string && value is not int && value is not char)
+            {
+                return false;
+            }
+
+            if (char.TryParse(value.ToString(), out result))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }

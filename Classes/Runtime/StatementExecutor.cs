@@ -101,6 +101,72 @@ namespace Classes.Runtime
                     }
                     values.RemoveAt(values.Count - 1);
                 }
+                else if (s is TryParseStatement tp)
+                {
+                    object toParse = expressions.Evaluate(tp.value, scope);
+
+                    RunTimeVariable target = scope.Get(tp.target);
+                    RunTimeVariable success = scope.Get(tp.success);
+
+                    runtime.SetPos(tp.line, tp.col, tp.source);
+
+                    if (success.type != VarType.BOOL || success.isArray)
+                    {
+                        throw runtime.Error($"Type error: expected {VarType.BOOL} but got {success.type}");
+                    }
+
+                    bool parsed = false;
+                    object? parsedValue = null;
+
+                    if (tp.type == VarType.NUM)
+                    {
+                        if (Conversions.TryToNum(toParse, out int num))
+                        {
+                            parsed = true;
+                            parsedValue = num;
+                        }
+                    }
+                    else if (tp.type == VarType.DECIMAL)
+                    {
+                        if (Conversions.TryToDecimal(toParse, out decimal dec))
+                        {
+                            parsed = true;
+                            parsedValue = dec;
+                        }
+                    }
+                    else if (tp.type == VarType.CHAR)
+                    {
+                        if (Conversions.TryToChar(toParse, out char ch))
+                        {
+                            parsed = true;
+                            parsedValue = ch;
+                        }
+                    }
+                    else if (tp.type == VarType.BOOL)
+                    {
+                        if (Conversions.TryToBool(toParse, out bool boolean))
+                        {
+                            parsed = true;
+                            parsedValue = boolean;
+                        }
+                    }
+
+                    if (parsed)
+                    {
+                        TypeChecker.CheckType(runtime, parsedValue!, target.type, target.isArray);
+
+                        target.value = parsedValue;
+                        target.isInitialized = true;
+
+                        success.value = true;
+                        success.isInitialized = true;
+                    }
+                    else
+                    {
+                        success.value = false;
+                        success.isInitialized = true;
+                    }
+                }
                 else if (s is RedefineArrElement arr)
                 {
                     RunTimeVariable variable = scope.Get(arr.name);

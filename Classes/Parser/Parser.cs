@@ -116,6 +116,11 @@ namespace Classes.Parser
                 return ParsePop();
             }
 
+            else if (tokens[pos].type == Type.TRYPARSENUM || tokens[pos].type == Type.TRYPARSEDEC || tokens[pos].type == Type.TRYPARSEBOOL || tokens[pos].type == Type.TRYPARSECHAR)
+            {
+                return ParseTryParse();
+            }
+
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.BOOL)
             {
                 return ParseVariable(Type.BOOL, VarType.BOOL);
@@ -213,6 +218,31 @@ namespace Classes.Parser
 
             SetPos(parsed, conversion);
             return parsed;
+        }
+
+        public TryParseStatement ParseTryParse()
+        {
+            Token conversion = Use(Type.TRYPARSENUM, Type.TRYPARSEDEC, Type.TRYPARSEBOOL, Type.TRYPARSECHAR);
+            Use(Type.OPEN);
+            Expression value = ParseExpression();
+            Use(Type.COMA);
+            Token target = Use(Type.VAR);
+            Use(Type.COMA);
+            Token success = Use(Type.VAR);
+            Use(Type.CLOSE);
+            Use(Type.END);
+
+            VarType type = conversion.type switch
+            {
+                Type.TRYPARSENUM => VarType.NUM,
+                Type.TRYPARSEDEC => VarType.DECIMAL,
+                Type.TRYPARSECHAR => VarType.CHAR,
+                Type.TRYPARSEBOOL => VarType.BOOL,
+
+                _ => throw new AlanaError($"Invalid type parsed for tryparse", conversion.line, conversion.col, conversion.source!)
+            };
+
+            return new TryParseStatement(value, target.value!, success.value!, type);
         }
 
         private DefineVar ParseVariable(Type typeToken, VarType type, Type terminator = Type.END)
