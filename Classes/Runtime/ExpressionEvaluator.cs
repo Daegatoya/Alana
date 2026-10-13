@@ -278,6 +278,15 @@ namespace Classes.Runtime
 
                 if (result != null) return result;
             }
+            else if (expression is Modulo modulo)
+            {
+                object left = Evaluate(modulo.left, scope);
+                object right = Evaluate(modulo.right, scope);
+
+                object? result = Operators.Modulo(left, right);
+
+                if (result != null) return result;
+            }
 
             runtime.SetPos(expression.line, expression.col, expression.source);
             throw runtime.Error("Unknown expression");

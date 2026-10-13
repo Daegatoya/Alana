@@ -800,6 +800,10 @@ namespace Classes.Parser
                         left = new LessThan(left, right);
                         break;
 
+                    case Type.MODULO:
+                        left = new Modulo(left, right);
+                        break;
+
                     default:
                         Token token = tokens[pos];
                         throw new AlanaError($"Unexpected operator: {operation}", token.line, token.col, token.source!);

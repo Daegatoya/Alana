@@ -207,5 +207,38 @@ namespace Classes.Runtime
 
             throw runtime.Error($"Comparison error: cannot compare {left.GetType().Name} with {right.GetType().Name} using LessOrEqual");
         }
+
+        public static object? Modulo(object left, object right)
+        {
+            if (left is int && right is int)
+            {
+                int left_final = (int)left;
+                int right_final = (int)right;
+                return left_final % right_final;
+            }
+
+            else if (left is decimal && right is int)
+            {
+                double left_final = Convert.ToDouble(left);
+                double right_final = Convert.ToDouble(right);
+                return left_final % right_final;
+            }
+
+            else if (left is int && right is decimal)
+            {
+                double left_final = Convert.ToDouble(left);
+                double right_final = Convert.ToDouble(right);
+                return left_final % right_final;
+            }
+
+            else if (left is decimal && right is decimal)
+            {
+                double left_final = Convert.ToDouble(left);
+                double right_final = Convert.ToDouble(right);
+                return left_final % right_final;
+            }
+
+            return null;
+        }
     }
 }

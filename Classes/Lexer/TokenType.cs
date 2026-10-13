@@ -64,4 +64,5 @@
     CONTINUE,
     BREAK,
     WITHIN,
+    MODULO,
 }

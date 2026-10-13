@@ -60,6 +60,7 @@ namespace Classes.Lexer
             ["continue"] = Type.CONTINUE,
             ["break"] = Type.BREAK,
             ["within"] = Type.WITHIN,
+            ["mod"] = Type.MODULO,
         };
         private string source { get; }
         private int pos = 0;
