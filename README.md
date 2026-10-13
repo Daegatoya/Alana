@@ -77,6 +77,10 @@ To use Alana, here are the steps:
 
 Good question! Here is a little list showing you all implemented features so far:
 
+### v1.0
+
+<details>
+    
 - [x] Variables
 - [x] Arithmetic
 - [x] Functions
@@ -90,6 +94,27 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Arrays
 - [x] Loops
 - [ ] Making you a sandwich (now that I think about it, I don't think I'll add this feature...)
+
+</details>
+
+### v1.x - v2.0
+
+<details>
+    
+- [x] Importing files
+- [x] Public/private visibility
+- [ ] Classes
+- [ ] Fields
+- [ ] Methods
+- [ ] "This" pointer
+- [ ] Object reference
+- [ ] Override
+- [ ] Type checking OOP
+- [ ] Exceptions
+- [ ] Polymorphism
+- [ ] Making you a sandwich (I already said I wouldn't add this feature.)
+
+</details>
 
 In the table below, you can see all **variable types** included in the language:
 
