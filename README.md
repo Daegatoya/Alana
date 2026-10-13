@@ -474,7 +474,7 @@ public:
 
 ## So what's next?
 
-Currently, Alana is officially out in its first version. With that said, the language currently only supports basic stuff and built-ins. So, I will be working on the second version of Alana which will add OOP to Alana.
+I am currently working on making Alana fully OOP, which has already started in v1.1. Stay tuned!
 
 And, of course, Alana will probably keep evolving as I come up with more ideas.
 
