@@ -214,6 +214,8 @@ So, the syntax goes as follows:
 | `continue` | Continue statement inside a loop |
 | `break` | Break statement inside a loop |
 
+</details>
+
 ### Object Oriented
 <details>
     
