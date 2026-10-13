@@ -20,6 +20,13 @@ namespace Alana
                     Console.WriteLine("Usage: alana <file.alana>");
                     return;
                 }
+
+                if (args[0] == "--version")
+                {
+                    Console.WriteLine("Alana 1.1");
+                    return;
+                }
+
                 string file = args[0];
                 if (!File.Exists(file))
                 {

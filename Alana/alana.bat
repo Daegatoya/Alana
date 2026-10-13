@@ -1,10 +1,19 @@
 @echo off
 setlocal
 
-set "ALANA-DEV_HOME=%~dp0source"
+set "ALANA_HOME=%~dp0source"
+
+if "%~1"=="--version" (
+    if not exist "%ALANA_HOME%\Alana.exe" (
+        echo Alana error: runtime not found in "%ALANA_HOME%".
+        exit /b 1
+    )
+    "%ALANA_HOME%\Alana.exe" --version
+    exit /b %ERRORLEVEL%
+)
 
 if "%~1"=="" (
-    echo Usage: alanadev ^<file.alana^>
+    echo Usage: alana ^<file.alana^>
     exit /b 1
 )
 
@@ -13,13 +22,13 @@ if not exist "%~1" (
     exit /b 1
 )
 
-if not exist "%ALANA_HOME%\Alana-dev.exe" (
-    echo Alana error: runtime not found in "%ALANA-DEV_HOME%".
+if not exist "%ALANA_HOME%\Alana.exe" (
+    echo Alana error: runtime not found in "%ALANA_HOME%".
     exit /b 1
 )
 
 pushd "%~dp1"
-"%ALANA-DEV_HOME%\Alana-dev.exe" "%~f1"
+"%ALANA_HOME%\Alana.exe" "%~f1"
 set "CODE=%ERRORLEVEL%"
 popd
 
