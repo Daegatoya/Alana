@@ -65,4 +65,8 @@
     BREAK,
     WITHIN,
     MODULO,
+    IMPORT,
+    PUBLIC,
+    PRIVATE,
+    TWODOTS
 }

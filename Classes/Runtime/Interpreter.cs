@@ -16,15 +16,17 @@ namespace Classes.Runtime
         private Scope globals;
         private ExpressionEvaluator evaluator;
         private StatementExecutor executor;
+        public ModuleLoader moduleLoader;
 
         internal int line, col;
         internal string source = string.Empty;
 
-        public Interpreter()
+        public Interpreter(string entryFile)
         {
             evaluator = new ExpressionEvaluator(this);
             executor = new StatementExecutor(this, evaluator);
             globals = new Scope(this);
+            moduleLoader = new ModuleLoader(this, entryFile);
         }
 
         internal AlanaError Error(string message)
@@ -51,17 +53,62 @@ namespace Classes.Runtime
 
         internal void DefineFunction(DefFunction function)
         {
-            if (functions.ContainsKey(function.name))
+            function.ownermodule = moduleLoader.CurrentFile;
+
+            if (function.visibility == null)
+            {
+                function.visibility = Visibility.PUBLIC;
+            }
+
+            string key = function.name;
+            if (function.visibility == Visibility.PRIVATE && function.ownermodule != null)
+            {
+                key = function.ownermodule + "::" + function.name;
+            }
+
+            if (functions.ContainsKey(key))
             {
                 throw Error($"Function {function.name} is already defined");
             }
 
-            functions.Add(function.name, function);
+            if (function.visibility == Visibility.PRIVATE && function.ownermodule != null)
+            {
+                if (functions.ContainsKey(function.name))
+                {
+                    DefFunction existing = functions[function.name];
+                    if (existing.ownermodule == function.ownermodule)
+                    {
+                        throw Error($"Function {function.name} is already defined");
+                    }
+                }
+            }
+            else if (function.ownermodule != null)
+            {
+                string privateKey = function.ownermodule + "::" + function.name;
+                if (functions.ContainsKey(privateKey))
+                {
+                    throw Error($"Function {function.name} is already defined");
+                }
+            }
+
+            functions.Add(key, function);
         }
 
         internal object? Invoke(FuncCall call, Scope callerScope)
         {
-            if (functions.TryGetValue(call.name, out DefFunction? function))
+            string privateKey = moduleLoader.CurrentFile + "::" + call.name;
+            DefFunction? function = null;
+
+            if (functions.ContainsKey(privateKey))
+            {
+                function = functions[privateKey];
+            }
+            else if (functions.TryGetValue(call.name, out DefFunction? publicFunction))
+            {
+                function = publicFunction;
+            }
+
+            if (function != null)
             {
                 Scope scope = globals.CreateChild();
 
@@ -78,7 +125,24 @@ namespace Classes.Runtime
                     scope.Define(p.name, new RunTimeVariable(p.type, a_value, true, p.isArray));
                 }
 
-                ExecResult? result = executor.Execute(function.body, scope);
+                if (function.ownermodule != null)
+                {
+                    moduleLoader.EnterModule(function.ownermodule);
+                }
+
+                ExecResult? result;
+
+                try
+                {
+                    result = executor.Execute(function.body, scope);
+                }
+                finally
+                {
+                    if (function.ownermodule != null)
+                    {
+                        moduleLoader.ExitModule();
+                    }
+                }
 
                 if (result == null)
                 {
@@ -94,6 +158,14 @@ namespace Classes.Runtime
             }
             else
             {
+                foreach (DefFunction f in functions.Values)
+                {
+                    if (f.name == call.name && f.visibility == Visibility.PRIVATE)
+                    {
+                        throw Error($"Function {call.name} is private");
+                    }
+                }
+
                 throw Error($"Unknown function {call.name}");
             }
         }

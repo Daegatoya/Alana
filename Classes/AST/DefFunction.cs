@@ -12,12 +12,15 @@ namespace Classes.AST
         public string name = string.Empty;
         public List<Param>? parameters = new();
         public List<Statement>? body = new();
+        public Visibility? visibility;
+        public string? ownermodule;
 
-        public DefFunction(string name, List<Param>? parameters = null, List<Statement>? body = null)
+        public DefFunction(Visibility? visibility, string name, List<Param>? parameters = null, List<Statement>? body = null)
         {
             this.name = name;
             this.parameters = parameters;
             this.body = body;
+            this.visibility = visibility;
         }
     }
 }

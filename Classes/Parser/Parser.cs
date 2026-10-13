@@ -15,6 +15,7 @@ namespace Classes.Parser
         #region Declaration & Parser Base
         private Token[] tokens;
         private int pos = 0;
+        private Visibility visibility = Visibility.PUBLIC;
 
         public Parser(Token[] tokens)
         {
@@ -191,6 +192,27 @@ namespace Classes.Parser
                 return ParseBreak();
             }
 
+            if(tokens[pos].type == Type.IMPORT)
+            {
+                return ParseImport();
+            }
+
+            if (tokens[pos].type == Type.PUBLIC)
+            {
+                Use(Type.PUBLIC);
+                Use(Type.TWODOTS);
+                visibility = Visibility.PUBLIC;
+                return null;
+            }
+
+            if (tokens[pos].type == Type.PRIVATE)
+            {
+                Use(Type.PRIVATE);
+                Use(Type.TWODOTS);
+                visibility = Visibility.PRIVATE;
+                return null;
+            }
+
             Token token = tokens[pos];
 
             throw new AlanaError($"Unexpected token: {token.type} ({token.value})", token.line, token.col, token.source! );
@@ -255,7 +277,7 @@ namespace Classes.Parser
             Expression? value = ParseExpression();
             Use(terminator);
 
-            return new DefineVar(name.value!, type, value, isArray);
+            return new DefineVar(visibility, name.value!, type, value, isArray);
         }
 
         public Statement ParseRedefine(Type terminator = Type.END)
@@ -353,6 +375,7 @@ namespace Classes.Parser
         #region If Statements Parser
         public IfStatement ParseIfStatement()
         {
+            Visibility previous = visibility;
             List<Statement> body = new();
             List<ElseIfStatement>? elseIfStatements = null;
             List<Statement>? elseBody = null;
@@ -361,8 +384,11 @@ namespace Classes.Parser
             Use(Type.END);
             while (pos < tokens.Length && tokens[pos].type != Type.ELSE && tokens[pos].type != Type.ELSEIF && tokens[pos].type != Type.EXITFUNC)
             {
-                Statement statement = ParseStatement()!;
-                body.Add(statement);
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
             }
             while (pos < tokens.Length && tokens[pos].type == Type.ELSEIF)
             {
@@ -373,8 +399,11 @@ namespace Classes.Parser
 
                 while (pos < tokens.Length && tokens[pos].type != Type.ELSE && tokens[pos].type != Type.ELSEIF && tokens[pos].type != Type.EXITFUNC)
                 {
-                    Statement eiStatement = ParseStatement()!;
-                    elseIfBody.Add(eiStatement);
+                    Statement? eiStatement = ParseStatement();
+                    if (eiStatement is not null)
+                    {
+                        elseIfBody.Add(eiStatement);
+                    }
                 }
 
                 if (elseIfStatements == null)
@@ -391,12 +420,16 @@ namespace Classes.Parser
                 elseBody = new();
                 while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
                 {
-                    Statement eStatement = ParseStatement()!;
-                    elseBody.Add(eStatement);
+                    Statement? eStatement = ParseStatement();
+                    if (eStatement is not null)
+                    {
+                        elseBody.Add(eStatement);
+                    }
                 }
             }
             Use(Type.EXITFUNC);
             Use(Type.END);
+            visibility = previous;
             return new IfStatement(condition, body, elseBody, elseIfStatements);
         }
         #endregion
@@ -404,22 +437,28 @@ namespace Classes.Parser
         #region Loops Parsers
         public WhileStatement ParseWhile()
         {
+            Visibility previous = visibility;
             List<Statement> body = new();
             Use(Type.WHILE);
             Expression condition = ParseExpression();
             Use(Type.END);
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
-                Statement statement = ParseStatement()!;
-                body.Add(statement);
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
             }
             Use(Type.EXITFUNC);
             Use(Type.END);
+            visibility = previous;
             return new WhileStatement(condition, body);
         }
 
         public ForStatement ParseFor()
         {
+            Visibility previous = visibility;
             List<Statement> body = new();
             Use(Type.FOR);
             Use(Type.OPEN);
@@ -437,16 +476,21 @@ namespace Classes.Parser
             Use(Type.END);
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
-                Statement statement = ParseStatement()!;
-                body.Add(statement);
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
             }
             Use(Type.EXITFUNC);
             Use(Type.END);
+            visibility = previous;
             return new ForStatement(initialization, condition, step, body);
         }
 
         public ForEveryStatement ParseForEvery()
         {
+            Visibility previous = visibility;
             List<Statement> body = new();
             Use(Type.FOREVERY);
             Use(Type.OPEN);
@@ -468,11 +512,15 @@ namespace Classes.Parser
             Use(Type.END);
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
-                Statement statement = ParseStatement()!;
-                body.Add(statement);
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
             }
             Use(Type.EXITFUNC);
             Use(Type.END);
+            visibility = previous;
             return new ForEveryStatement(name.value!, type_Parsed, isArray, array.value!, body);
         }
         #endregion
@@ -505,6 +553,8 @@ namespace Classes.Parser
 
         public DefFunction ParseFunction()
         {
+            Visibility functionVisibility = visibility;
+            Visibility previous = visibility;
             List<Statement> body = new();
             List<Param> @params = new();
 
@@ -544,14 +594,18 @@ namespace Classes.Parser
 
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
-                Statement statement = ParseStatement()!;
-                body.Add(statement);
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
             }
 
             Use(Type.EXITFUNC);
             Use(Type.END);
 
-            return new DefFunction(name.value!, @params, body);
+            visibility = previous;
+            return new DefFunction(functionVisibility, name.value!, @params, body);
         }
         #endregion
 
@@ -635,6 +689,21 @@ namespace Classes.Parser
             Use(Type.END);
             return new PopStatement(name.value!);
         }
+        #endregion
+
+        #region Import Parser
+
+        private ImportStatement ParseImport()
+        {
+            Use(Type.IMPORT);
+            Use(Type.OPENCLOSESTR);
+            Token file = Use(Type.STRING);
+            Use(Type.OPENCLOSESTR);
+            Use(Type.END);
+
+            return new ImportStatement(file.value!);
+        }
+
         #endregion
 
         #endregion

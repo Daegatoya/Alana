@@ -35,7 +35,7 @@ namespace Alana
                 Parser parser = new Parser(tokens);
                 List<Statement> statements = parser.Parse();
 
-                Interpreter interpreter = new Interpreter();
+                Interpreter interpreter = new Interpreter(file);
                 interpreter.Execute(statements);
             }
             catch (AlanaError ex)

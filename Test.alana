@@ -1,8 +1,2 @@
-﻿define num x is 10#
-define decimal y is 3.3#
-
-define func modulo()#
-  return x mod y#
-end#
-
-showln call modulo()#
+﻿import "importFile.alana"#
+showln call Add(10, 50)#

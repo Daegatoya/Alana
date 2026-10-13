@@ -61,6 +61,9 @@ namespace Classes.Lexer
             ["break"] = Type.BREAK,
             ["within"] = Type.WITHIN,
             ["mod"] = Type.MODULO,
+            ["import"] = Type.IMPORT,
+            ["public"] = Type.PUBLIC,
+            ["private"] = Type.PRIVATE,
         };
         private string source { get; }
         private int pos = 0;
@@ -84,7 +87,11 @@ namespace Classes.Lexer
                 if (c == '\n')
                 {
                     string currentLine = sources[line - 1].TrimEnd('\r', ' ', '\t');
-                    if (currentLine.Length > 0 && currentLine[^1] != '#') throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
+                    string trimmed = currentLine.Trim();
+                    if (trimmed != "public:" && trimmed != "private:")
+                    {
+                        if (currentLine.Length > 0 && currentLine[^1] != '#') throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
+                    }
                     line++;
                     col = 1;
                     pos++;
@@ -101,6 +108,14 @@ namespace Classes.Lexer
                 else if(c == '#')
                 {
                     tokens.Add(new Token(Type.END, line, col, sources[line - 1]));
+                    pos++;
+                    col++;
+                    continue;
+                }
+
+                else if (c == ':')
+                {
+                    tokens.Add(new Token(Type.TWODOTS, line, col, sources[line - 1]));
                     pos++;
                     col++;
                     continue;

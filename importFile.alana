@@ -1,0 +1,10 @@
+private:
+    define num x is new#
+    define num y is new#
+
+public:
+    define func Add(num left, num right)#
+        redefine x is left#
+        redefine y is right#
+        return x + y#
+    end#

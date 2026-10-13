@@ -21,13 +21,16 @@ namespace Classes.AST
         public VarType type { get; private set; }
         public Expression? value;
         public bool isArray = false;
+        public Visibility? visibility;
+        public string? ownermodule;
 
-        public DefineVar(string name, VarType type, Expression? value, bool isArray)
+        public DefineVar(Visibility? visibility, string name, VarType type, Expression? value, bool isArray)
         {
             this.name = name;
             this.type = type;
             this.value = value;
             this.isArray = isArray;
+            this.visibility = visibility;
         }
     }
 }

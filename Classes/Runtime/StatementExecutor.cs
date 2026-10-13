@@ -27,18 +27,49 @@ namespace Classes.Runtime
             {
                 runtime.SetPos(s.line, s.col, s.source);
 
+                if (s is ImportStatement import)
+                {
+                    runtime.moduleLoader.Load(import.path!);
+                    continue;
+                }
+
                 if (s is DefineVar d)
                 {
+                    if (scope.IsGlobal())
+                    {
+                        d.ownermodule = runtime.moduleLoader.CurrentFile;
+
+                        if (d.visibility == null)
+                        {
+                            d.visibility = Visibility.PUBLIC;
+                        }
+                    }
+
                     if (d.value is NewExpression)
                     {
-                        scope.Define(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
+                        if (scope.IsGlobal())
+                        {
+                            scope.Define(d.name, new RunTimeVariable(d.type, null, false, d.isArray, d.visibility, d.ownermodule));
+                        }
+                        else
+                        {
+                            scope.Define(d.name, new RunTimeVariable(d.type, null, false, d.isArray));
+                        }
                     }
                     else
                     {
                         object value = expressions.Evaluate(d.value!, scope);
                         TypeChecker.CheckType(runtime, value, d.type, d.isArray);
                         runtime.SetPos(d.line, d.col, d.source);
-                        scope.Define(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
+
+                        if (scope.IsGlobal())
+                        {
+                            scope.Define(d.name, new RunTimeVariable(d.type, value, true, d.isArray, d.visibility, d.ownermodule));
+                        }
+                        else
+                        {
+                            scope.Define(d.name, new RunTimeVariable(d.type, value, true, d.isArray));
+                        }
                     }
                 }
                 else if (s is RedefineVar r)
