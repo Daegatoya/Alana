@@ -305,6 +305,51 @@ namespace Classes.Runtime
                 {
                     return new ExecResult(ExecFlow.Continue);
                 }
+                else if (s is DefClass defC)
+                {
+                    runtime.DefineClass(defC);
+                }
+                else if (s is RedefineSelfField redefineField)
+                {
+                    ClassInstance? instance = scope.currentInstance;
+
+                    if (instance == null)
+                    {
+                        throw runtime.Error("self can only be used inside a class");
+                    }
+
+                    RunTimeVariable field = instance.fields.GetLocal(redefineField.fieldName);
+
+                    object value = expressions.Evaluate(redefineField.value, scope);
+
+                    TypeChecker.CheckType(runtime, value, field.type, field.isArray);
+
+                    field.value = value;
+                    field.isInitialized = true;
+                }
+                else if (s is DefineObject defObj)
+                {
+                    object value = expressions.Evaluate(defObj.value, scope);
+
+                    if (value is not ClassInstance instance)
+                    {
+                        throw runtime.Error($"Expected object of class {defObj.className}");
+                    }
+
+                    if (instance.definition.name != defObj.className)
+                    {
+                        throw runtime.Error($"Expected object of class {defObj.className} " + $"but received {instance.definition.name}");
+                    }
+
+                    string? ownerModule = null;
+
+                    if (scope.IsGlobal())
+                    {
+                        ownerModule = runtime.moduleLoader.CurrentFile;
+                    }
+
+                    scope.DefineObject(defObj.name, instance, defObj.visibility, ownerModule);
+                }
                 else
                 {
                     throw runtime.Error($"Invalid statement {s}");

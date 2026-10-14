@@ -9,9 +9,9 @@ namespace Classes.AST
 {
     public class CallStatement : Statement
     {
-        public FuncCall call;
+        public Expression call;
 
-        public CallStatement(FuncCall call)
+        public CallStatement(Expression call)
         {
             this.call = call;
         }

@@ -65,6 +65,10 @@ namespace Classes.Lexer
             ["public"] = Type.PUBLIC,
             ["private"] = Type.PRIVATE,
             ["returning"] = Type.RETURN_TYPE,
+            ["class"] = Type.CLASS,
+            ["constructor"] = Type.CONSTRUCTOR,
+            ["newobj"] = Type.NEWOBJ,
+            ["self"] = Type.SELF,
         };
         private string source { get; }
         private int pos = 0;
@@ -109,6 +113,14 @@ namespace Classes.Lexer
                 else if(c == '#')
                 {
                     tokens.Add(new Token(Type.END, line, col, sources[line - 1]));
+                    pos++;
+                    col++;
+                    continue;
+                }
+
+                else if (c == '.')
+                {
+                    tokens.Add(new Token(Type.DOT, line, col, sources[line - 1]));
                     pos++;
                     col++;
                     continue;

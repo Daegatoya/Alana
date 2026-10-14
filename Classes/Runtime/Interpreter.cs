@@ -13,6 +13,7 @@ namespace Classes.Runtime
     public class Interpreter
     {
         private Dictionary<string, DefFunction> functions = new();
+        private Dictionary<string, DefClass> classes = new();
         private Scope globals;
         private ExpressionEvaluator evaluator;
         private StatementExecutor executor;
@@ -49,6 +50,293 @@ namespace Classes.Runtime
             {
                 throw FlowError(result.Flow);
             }
+        }
+
+        internal DefClass ResolveClass(string name)
+        {
+            string privateKey = moduleLoader.CurrentFile + "::" + name;
+
+            if (classes.TryGetValue(privateKey, out DefClass? privateClass))
+            {
+                return privateClass;
+            }
+
+            if (classes.TryGetValue(name, out DefClass? publicClass))
+            {
+                return publicClass;
+            }
+
+            foreach (DefClass c in classes.Values)
+            {
+                if (c.name == name && c.visibility == Visibility.PRIVATE)
+                {
+                    throw Error($"Class {name} is private");
+                }
+            }
+
+            throw Error($"Unknown class {name}");
+        }
+
+        private void InvokeConstructor(ClassInstance instance, DefConstructor constructor, List<Expression> arguments, Scope callerScope)
+        {
+            if (arguments.Count != constructor.parameters.Count)
+            {
+                throw Error($"Constructor for {instance.definition.name} expected " + $"{constructor.parameters.Count} arguments but received {arguments.Count}");
+            }
+
+            Scope scope = instance.fields.CreateChild();
+            scope.currentInstance = instance;
+
+            for (int i = 0; i < constructor.parameters.Count; i++)
+            {
+                Param parameter = constructor.parameters[i];
+                Expression argument = arguments[i];
+
+                object value = evaluator.Evaluate(argument, callerScope);
+
+                if (!TypeChecker.CheckType(this, value, parameter.type, parameter.isArray))
+                {
+                    throw Error($"Parsed argument {value} has the wrong type for parameter " + $"{parameter.name} of type {parameter.type}");
+                }
+
+                scope.Define(parameter.name, new RunTimeVariable(parameter.type, value, true, parameter.isArray));
+            }
+
+            if (instance.definition.ownermodule != null)
+            {
+                moduleLoader.EnterModule(instance.definition.ownermodule);
+            }
+
+            try
+            {
+                ExecResult? result = executor.Execute(constructor.body, scope);
+
+                if (result != null)
+                {
+                    if (result.Flow == ExecFlow.Return)
+                    {
+                        throw Error($"Constructor for {instance.definition.name} cannot return a value");
+                    }
+
+                    throw FlowError(result.Flow);
+                }
+            }
+            finally
+            {
+                if (instance.definition.ownermodule != null)
+                {
+                    moduleLoader.ExitModule();
+                }
+            }
+        }
+
+        internal object? InvokeMethod(MethodCall call, Scope callerScope)
+        {
+            ClassInstance instance;
+
+            if (call.objectName == "self")
+            {
+                instance = callerScope.currentInstance ?? throw Error("self can only be used inside a class");
+            }
+            else
+            {
+                instance = callerScope.GetObject(call.objectName);
+            }
+
+            DefFunction? method = instance.definition.methods.FirstOrDefault(m => m.name == call.methodName);
+
+            if (method == null)
+            {
+                throw Error($"Class {instance.definition.name} has no method {call.methodName}");
+            }
+
+            if (method.visibility == Visibility.PRIVATE)
+            {
+                ClassInstance? callerInstance = callerScope.currentInstance;
+
+                if (callerInstance == null || callerInstance.definition != instance.definition)
+                {
+                    throw Error($"Method {call.methodName} is private");
+                }
+            }
+
+            if (call.arguments.Count != method.parameters!.Count)
+            {
+                throw Error($"Method {call.methodName} expected " + $"{method.parameters.Count} arguments but received " + $"{call.arguments.Count}");
+            }
+
+            Scope scope = instance.fields.CreateChild();
+
+            scope.currentInstance = instance;
+
+            for (int i = 0; i < method.parameters.Count; i++)
+            {
+                Param parameter = method.parameters[i];
+                Expression argument = call.arguments[i];
+
+                object value = evaluator.Evaluate(argument, callerScope);
+
+                if (!TypeChecker.CheckType(this, value, parameter.type, parameter.isArray))
+                {
+                    throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {parameter.name} of type {parameter.type}");
+                }
+
+                scope.Define(parameter.name, new RunTimeVariable(parameter.type, value, true, parameter.isArray));
+            }
+
+            if (instance.definition.ownermodule != null)
+            {
+                moduleLoader.EnterModule(instance.definition.ownermodule);
+            }
+
+            ExecResult? result;
+
+            try
+            {
+                result = executor.Execute(method.body, scope);
+            }
+            finally
+            {
+                if (instance.definition.ownermodule != null)
+                {
+                    moduleLoader.ExitModule();
+                }
+            }
+
+            if (result == null)
+            {
+                if (method.return_type is not null)
+                {
+                    throw Error($"Method {method.name} expected return type " + $"{method.return_type}" + $"{(method.returnIsArray ? "[]" : "")} " + $"but returned nothing");
+                }
+
+                return null;
+            }
+
+            if (result.Flow == ExecFlow.Return)
+            {
+                if (method.return_type is not null)
+                {
+                    if (result.Value is null)
+                    {
+                        throw Error($"Method {method.name} expected return type " + $"{method.return_type}" + $"{(method.returnIsArray ? "[]" : "")}");
+                    }
+
+                    bool correctType = TypeChecker.CheckType(this, result.Value, method.return_type, method.returnIsArray);
+
+                    if (!correctType)
+                    {
+                        throw Error($"Method {method.name} expected return type " + $"{method.return_type}" + $"{(method.returnIsArray ? "[]" : "")}");
+                    }
+                }
+
+                return result.Value;
+            }
+
+            throw FlowError(result.Flow);
+        }
+
+        internal ClassInstance InstantiateClass(string className, List<Expression> arguments, Scope callerScope)
+        {
+            DefClass definition = ResolveClass(className);
+
+            Scope fieldScope = globals.CreateChild();
+
+            ClassInstance instance = new ClassInstance(definition, fieldScope);
+
+            fieldScope.currentInstance = instance;
+
+            if (definition.ownermodule != null)
+            {
+                moduleLoader.EnterModule(definition.ownermodule);
+            }
+
+            try
+            {
+                foreach (DefineVar field in definition.fields)
+                {
+                    ExecResult? result = executor.Execute(new List<Statement> { field }, fieldScope);
+
+                    if (result != null)
+                    {
+                        throw FlowError(result.Flow);
+                    }
+                }
+            }
+            finally
+            {
+                if (definition.ownermodule != null)
+                {
+                    moduleLoader.ExitModule();
+                }
+            }
+
+            if (definition.constructor != null)
+            {
+                InvokeConstructor(instance, definition.constructor, arguments, callerScope);
+            }
+            else if (arguments.Count > 0)
+            {
+                throw Error($"Class {className} has no constructor");
+            }
+
+            return instance;
+        }
+
+        internal void DefineClass(DefClass classDefined)
+        {
+            classDefined.ownermodule = moduleLoader.CurrentFile;
+
+            if (classDefined.visibility == null)
+            {
+                classDefined.visibility = Visibility.PUBLIC;
+            }
+
+            foreach (DefFunction method in classDefined.methods)
+            {
+                method.ownermodule = classDefined.ownermodule;
+
+                if (method.visibility == null)
+                {
+                    method.visibility = Visibility.PRIVATE;
+                }
+            }
+
+            string key = classDefined.name;
+
+            if (classDefined.visibility == Visibility.PRIVATE && classDefined.ownermodule != null)
+            {
+                key = classDefined.ownermodule + "::" + classDefined.name;
+            }
+
+            if (classes.ContainsKey(key))
+            {
+                throw Error($"Class {classDefined.name} is already defined");
+            }
+
+            if (classDefined.visibility == Visibility.PRIVATE && classDefined.ownermodule != null)
+            {
+                if (classes.ContainsKey(classDefined.name))
+                {
+                    DefClass existing = classes[classDefined.name];
+
+                    if (existing.ownermodule == classDefined.ownermodule)
+                    {
+                        throw Error($"Class {classDefined.name} is already defined");
+                    }
+                }
+            }
+            else if (classDefined.ownermodule != null)
+            {
+                string privateKey = classDefined.ownermodule + "::" + classDefined.name;
+
+                if (classes.ContainsKey(privateKey))
+                {
+                    throw Error($"Class {classDefined.name} is already defined");
+                }
+            }
+
+            classes.Add(key, classDefined);
         }
 
         internal void DefineFunction(DefFunction function)
@@ -111,6 +399,11 @@ namespace Classes.Runtime
             if (function != null)
             {
                 Scope scope = globals.CreateChild();
+
+                if (call.arguments.Count != function.parameters!.Count)
+                {
+                    throw Error($"Function {function.name} expected " + $"{function.parameters.Count} arguments but received " + $"{call.arguments.Count}");
+                }
 
                 for (int i = 0; i < function.parameters!.Count; i++)
                 {

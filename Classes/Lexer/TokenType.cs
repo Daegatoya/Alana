@@ -70,4 +70,9 @@
     PRIVATE,
     TWODOTS,
     RETURN_TYPE,
+    CLASS,
+    CONSTRUCTOR,
+    NEWOBJ,
+    DOT,
+    SELF,
 }

@@ -88,8 +88,9 @@ namespace Classes.Parser
         {
             if (tokens[pos].type == Type.CALL)
             {
-                FuncCall call = ParseFuncCall();
+                Expression call = ParseCall();
                 Use(Type.END);
+
                 return new CallStatement(call);
             }
             if (tokens[pos].type == Type.DEFINE && tokens[pos+1].type == Type.NUM)
@@ -100,6 +101,11 @@ namespace Classes.Parser
             else if (tokens[pos].type == Type.SHOWLN)
             {
                 return ParseShowLn();
+            }
+
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.VAR && tokens[pos + 2].type == Type.VAR)
+            {
+                return ParseObjectVariable();
             }
 
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.STR)
@@ -140,6 +146,11 @@ namespace Classes.Parser
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
             {
                 return ParseFunction();
+            }
+
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.CLASS)
+            {
+                return ParseClass();
             }
 
             else if (tokens[pos].type == Type.REDEFINE)
@@ -283,6 +294,20 @@ namespace Classes.Parser
         public Statement ParseRedefine(Type terminator = Type.END)
         {
             Use(Type.REDEFINE);
+
+            if (tokens[pos].type == Type.SELF)
+            {
+                SelfField field = ParseSelfField();
+
+                Use(Type.EQUAL);
+
+                Expression value = ParseExpression();
+
+                Use(terminator);
+
+                return new RedefineSelfField(field.fieldName, value);
+            }
+
             Token name = Use(Type.VAR);
 
             if (tokens[pos].type == Type.OPENARRAY)
@@ -525,18 +550,52 @@ namespace Classes.Parser
         }
         #endregion
 
-        #region Functions Parsers
-        public FuncCall ParseFuncCall()
-        {
-            List<Expression> expressions = new();
+        #region Parse Call
 
-            Token call = Use(Type.CALL);
-            Token name = Use(Type.VAR);
+        public Expression ParseCall()
+        {
+            Token callToken = Use(Type.CALL);
+
+            Token firstName = Use(Type.VAR, Type.SELF);
+
+            string targetName = firstName.type == Type.SELF ? "self" : firstName.value!;
+
+            if (tokens[pos].type == Type.DOT)
+            {
+                Use(Type.DOT);
+
+                Token methodName = Use(Type.VAR);
+
+                Use(Type.OPEN);
+
+                List<Expression> arguments = new();
+
+                while (tokens[pos].type != Type.CLOSE)
+                {
+                    arguments.Add(ParseExpression());
+
+                    if (tokens[pos].type != Type.CLOSE)
+                    {
+                        Use(Type.COMA);
+                    }
+                }
+
+                Use(Type.CLOSE);
+
+                MethodCall result = new(targetName, methodName.value!, arguments);
+
+                SetPos(result, callToken);
+
+                return result;
+            }
+
             Use(Type.OPEN);
+
+            List<Expression> functionArguments = new();
 
             while (tokens[pos].type != Type.CLOSE)
             {
-                expressions.Add(ParseExpression());
+                functionArguments.Add(ParseExpression());
 
                 if (tokens[pos].type != Type.CLOSE)
                 {
@@ -546,11 +605,16 @@ namespace Classes.Parser
 
             Use(Type.CLOSE);
 
-            FuncCall result = new FuncCall(name.value!, expressions);
-            SetPos(result, call);
-            return result;
+            FuncCall functionCall = new(firstName.value!, functionArguments);
+
+            SetPos(functionCall, callToken);
+
+            return functionCall;
         }
 
+        #endregion
+
+        #region Functions Parsers
         public DefFunction ParseFunction()
         {
             Visibility functionVisibility = visibility;
@@ -577,13 +641,7 @@ namespace Classes.Parser
 
                 VarType type_Parsed = ParseVarType(type_Param, $"parameter {name_Param.value}");
 
-                @params.Add(
-                    new Param(
-                        name_Param.value!,
-                        type_Parsed,
-                        isArray
-                    )
-                );
+                @params.Add(new Param(name_Param.value!, type_Parsed, isArray));
 
                 if (tokens[pos].type != Type.CLOSE)
                 {
@@ -616,6 +674,207 @@ namespace Classes.Parser
             visibility = previous;
             return new DefFunction(functionVisibility, name.value!, @params, body, returnType, returnIsArray);
         }
+        #endregion
+
+        #region Class Parser
+
+        private DefineObject ParseObjectVariable()
+        {
+            Use(Type.DEFINE);
+
+            Token className = Use(Type.VAR);
+            Token variableName = Use(Type.VAR);
+
+            Use(Type.EQUAL);
+
+            Expression value = ParseExpression();
+
+            Use(Type.END);
+
+            return new DefineObject(visibility, className.value!, variableName.value!, value);
+        }
+
+        private NewObject ParseNewObject()
+        {
+            Token start = Use(Type.NEWOBJ);
+
+            Token className = Use(Type.VAR);
+
+            Use(Type.OPEN);
+
+            List<Expression> arguments = new();
+
+            while (tokens[pos].type != Type.CLOSE)
+            {
+                arguments.Add(ParseExpression());
+
+                if (tokens[pos].type != Type.CLOSE)
+                {
+                    Use(Type.COMA);
+                }
+            }
+
+            Use(Type.CLOSE);
+
+            NewObject result = new(className.value!, arguments);
+
+            SetPos(result, start);
+
+            return result;
+        }
+
+        public DefClass ParseClass()
+        {
+            Visibility classVisibility = visibility;
+            Visibility previous = visibility;
+
+            List<DefineVar> fields = new();
+            List<DefFunction> methods = new();
+            DefConstructor? constructor = null;
+
+            Use(Type.DEFINE);
+            Use(Type.CLASS);
+
+            Token name = Use(Type.VAR);
+            Use(Type.END);
+
+            visibility = Visibility.PRIVATE;
+
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                if (tokens[pos].type == Type.PUBLIC)
+                {
+                    Use(Type.PUBLIC);
+                    Use(Type.TWODOTS);
+                    visibility = Visibility.PUBLIC;
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.PRIVATE)
+                {
+                    Use(Type.PRIVATE);
+                    Use(Type.TWODOTS);
+                    visibility = Visibility.PRIVATE;
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
+                {
+                    methods.Add(ParseFunction());
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.CONSTRUCTOR)
+                {
+                    if (constructor is not null)
+                    {
+                        throw new AlanaError($"Class {name.value} already has a constructor", tokens[pos].line, tokens[pos].col, tokens[pos].source!);
+                    }
+
+                    constructor = ParseConstructor();
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.DEFINE)
+                {
+                    Token typeToken = tokens[pos + 1];
+
+                    if (typeToken.type == Type.NUM)
+                    {
+                        fields.Add(ParseVariable(Type.NUM, VarType.NUM));
+                        continue;
+                    }
+
+                    if (typeToken.type == Type.STR)
+                    {
+                        fields.Add(ParseVariable(Type.STR, VarType.STR));
+                        continue;
+                    }
+
+                    if (typeToken.type == Type.DECIMAL)
+                    {
+                        fields.Add(ParseVariable(Type.DECIMAL, VarType.DECIMAL));
+                        continue;
+                    }
+
+                    if (typeToken.type == Type.CHAR)
+                    {
+                        fields.Add(ParseVariable(Type.CHAR, VarType.CHAR));
+                        continue;
+                    }
+
+                    if (typeToken.type == Type.BOOL)
+                    {
+                        fields.Add(ParseVariable(Type.BOOL, VarType.BOOL));
+                        continue;
+                    }
+                }
+
+                Token token = tokens[pos];
+
+                throw new AlanaError($"Invalid class member: {token.type}", token.line, token.col, token.source!);
+            }
+
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+
+            visibility = previous;
+
+            return new DefClass(classVisibility, name.value!, fields, methods, constructor);
+        }
+
+        public DefConstructor ParseConstructor()
+        {
+            Visibility constructorVisibility = visibility;
+            Visibility previous = visibility;
+
+            List<Statement> body = new();
+            List<Param> @params = new();
+
+            Use(Type.DEFINE);
+            Use(Type.CONSTRUCTOR);
+
+            Use(Type.OPEN);
+
+            while (pos < tokens.Length && tokens[pos].type != Type.CLOSE)
+            {
+                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL);
+
+                bool isArray = ParseArrayType();
+
+                Token name_Param = Use(Type.VAR);
+
+                VarType type_Parsed = ParseVarType(type_Param, $"constructor parameter {name_Param.value}");
+
+                @params.Add(new Param(name_Param.value!, type_Parsed, isArray));
+
+                if (tokens[pos].type != Type.CLOSE)
+                {
+                    Use(Type.COMA);
+                }
+            }
+
+            Use(Type.CLOSE);
+            Use(Type.END);
+
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement? statement = ParseStatement();
+
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
+            }
+
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+
+            visibility = previous;
+
+            return new DefConstructor(constructorVisibility, @params, body);
+        }
+
         #endregion
 
         #region Show/ShowLN Parsers
@@ -720,6 +979,16 @@ namespace Classes.Parser
         #region Value Parsers
         private Expression ParseValue()
         {
+            if (tokens[pos].type == Type.SELF)
+            {
+                return ParseSelfField();
+            }
+
+            if (tokens[pos].type == Type.NEWOBJ)
+            {
+                return ParseNewObject();
+            }
+
             if (tokens[pos].type == Type.READLN)
             {
                 Token readln = Use(Type.READLN);
@@ -775,7 +1044,7 @@ namespace Classes.Parser
 
             if (tokens[pos].type == Type.CALL)
             {
-                return ParseFuncCall();
+                return ParseCall();
             }
 
             if (tokens[pos].type == Type.PARSEBOOL || tokens[pos].type == Type.PARSENUM || tokens[pos].type == Type.PARSESTR || tokens[pos].type == Type.PARSEDEC || tokens[pos].type == Type.PARSECHAR)
@@ -918,6 +1187,21 @@ namespace Classes.Parser
             }
 
             return left;
+        }
+
+        private SelfField ParseSelfField()
+        {
+            Token self = Use(Type.SELF);
+
+            Use(Type.DOT);
+
+            Token field = Use(Type.VAR);
+
+            SelfField result = new SelfField(field.value!);
+
+            SetPos(result, self);
+
+            return result;
         }
         #endregion
     }

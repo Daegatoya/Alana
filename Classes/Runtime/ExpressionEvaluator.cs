@@ -67,6 +67,11 @@ namespace Classes.Runtime
                 return runtime.Invoke(c, scope)!;
             }
 
+            if (expression is MethodCall methodCall)
+            {
+                return runtime.InvokeMethod(methodCall, scope);
+            }
+
             if (expression is StringExpression str)
             {
                 return str.value;
@@ -102,18 +107,47 @@ namespace Classes.Runtime
                 return number.value;
             }
 
-            if (expression is VarExpression variable)
+            if (expression is SelfField selfField)
             {
-                RunTimeVariable? runtimeVar = scope.Find(variable.name);
+                ClassInstance? instance = scope.currentInstance;
 
-                if (runtimeVar == null)
+                if (instance == null)
                 {
-                    throw runtime.Error($"Unknown variable {variable.name}");
+                    throw runtime.Error("self can only be used inside a class");
                 }
 
-                if (!runtimeVar.isInitialized) throw runtime.Error($"Variable {variable.name} is not initialized");
+                RunTimeVariable field = instance.fields.GetLocal(selfField.fieldName);
 
-                return runtimeVar.value!;
+                if (!field.isInitialized)
+                {
+                    throw runtime.Error($"Field {selfField.fieldName} is not initialized");
+                }
+
+                return field.value!;
+            }
+
+            if (expression is VarExpression variable)
+            {
+                RunTimeVariable? primitive = scope.Find(variable.name);
+
+                if (primitive != null)
+                {
+                    if (!primitive.isInitialized)
+                    {
+                        throw runtime.Error($"Variable {variable.name} is not initialized");
+                    }
+
+                    return primitive.value!;
+                }
+
+                ClassInstance? instance = scope.FindObject(variable.name);
+
+                if (instance != null)
+                {
+                    return instance;
+                }
+
+                throw runtime.Error($"Variable or object {variable.name} can't be found");
             }
 
             if (expression is ParseNum pnum)
@@ -169,6 +203,11 @@ namespace Classes.Runtime
                     throw runtime.Error($"Variable {length.name} does not contain a valid array");
                 }
                 return values.Count;
+            }
+
+            if(expression is NewObject newO)
+            {
+                return runtime.InstantiateClass(newO.className, newO.arguments, scope);
             }
 
             if (expression is AndExpression a)
