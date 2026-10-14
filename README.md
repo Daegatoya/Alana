@@ -1,4 +1,4 @@
-# Alana v1.1
+# Alana v1.2
 ![Alana Logo](alana.ico)
 ### Write what you mean.
 > Check out the official [Alana website](https://csalana.com)
@@ -103,11 +103,11 @@ Good question! Here is a little list showing you all implemented features so far
     
 - [x] Importing files
 - [x] Public/private visibility
-- [ ] Classes
-- [ ] Fields
-- [ ] Methods
-- [ ] "This" pointer
-- [ ] Object reference
+- [x] Classes
+- [x] Fields
+- [x] Methods
+- [x] "Self" expression
+- [x] Object reference
 - [ ] Override
 - [ ] Type checking OOP
 - [ ] Exceptions
@@ -147,6 +147,8 @@ So, the syntax goes as follows:
 | `#` | Endline character |
 | `return` | Return a value |
 | `new` | Define a new uninitialized variable |
+| `newobj` | Define a new object referencing a class |
+| `returning` | Defines the return type of a function |
 
 </details>
 
@@ -249,12 +251,15 @@ So, the syntax goes as follows:
 | `import` | Imports the file passed as a string |
 | `public` | Defines the public fields |
 | `private` | Defines the public fields |
+| `class` | Defines a class |
+| `constructor` | Defines the constructor of a class |
+| `self` | Calls a self field of a class |
 
 </details>
 
 The language uses as many English and simple terms as possible to be able to use it quickly and easily.
 
-The return type of a function can **NOT** be declared. Therefore, it's up to you to make sure the variable you assign the return value to is the right type.
+The return type of a function can be declared if you wish with the `returning` statement.
 
 <hr>
 
@@ -269,14 +274,21 @@ Here are some quick codes in .alana:
     
 ```txt
 define num x is 10#
-define decimal y is 3.3#
+define num y is 3#
 
-define func division(num x, decimal y)#
-  return x divide y#
+define func sub(num x, num y) returning num#
+  return x - y#
 end#
 
-define decimal z is call division(x, y)#
+define func add(num x, num y)#
+  return x + y#
+end#
+
+define num z is call sub(x, y)#
 showln z#
+
+define num k is call add(x, y)#
+showln k#
 ```
 
     
@@ -495,6 +507,68 @@ public:
 
 </details>
 
+### *Classes using self, fields, and methods*
+<details>
+
+**Main.alana**
+```txt
+import "Import.alana"#
+
+define Person jacob is newobj Person("Jacob", 21)#
+define Person alice is newobj Person("Alice", 30)#
+
+call jacob.Birthday()#
+call jacob.Birthday()#
+call alice.Birthday()#
+
+showln call jacob.GetName()#
+showln call jacob.GetAge()#
+
+showln call alice.GetName()#
+showln call alice.GetAge()#
+```
+
+**Import.alana**
+```txt
+private:
+define func DefaultName() returning str#
+    return "Unknown"#
+end#
+
+public:
+define class Person#
+
+private:
+define str name is call DefaultName()#
+define num age is 0#
+
+define func FormatName() returning str#
+    return self.name#
+end#
+
+public:
+define constructor(str name, num age)#
+    redefine self.name is name#
+    redefine self.age is age#
+end#
+
+define func GetName() returning str#
+    return call self.FormatName()#
+end#
+
+define func GetAge() returning num#
+    return self.age#
+end#
+
+define func Birthday()#
+    redefine self.age is self.age + 1#
+end#
+
+end#
+```
+
+</details>
+
 <hr>
 
 ## So what's next?
@@ -509,4 +583,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026 | Alana v1.1
+> Copyright © Daegatoya - 2026 | Alana v1.2
