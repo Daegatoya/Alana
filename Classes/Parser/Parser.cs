@@ -388,8 +388,22 @@ namespace Classes.Parser
             if (tokens[pos].type == Type.NOT)
             {
                 Token not = Use(Type.NOT);
+
                 NotExpression result = new NotExpression(ParseUnaryExpression());
+
                 SetPos(result, not);
+
+                return result;
+            }
+
+            if (tokens[pos].type == Type.SUB)
+            {
+                Token minus = Use(Type.SUB);
+
+                NegateExpression result = new NegateExpression(ParseUnaryExpression());
+
+                SetPos(result, minus);
+
                 return result;
             }
 

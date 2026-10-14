@@ -2,6 +2,7 @@ using Classes.AST;
 using Classes.AST.Expressions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -233,7 +234,7 @@ namespace Classes.Runtime
                 {
                     if (sh.expression is null)
                     {
-                        Console.Write("");
+                        Console.Write("", CultureInfo.InvariantCulture);
                         continue;
                     }
                     object result = expressions.Evaluate(sh.expression, scope);
@@ -243,7 +244,7 @@ namespace Classes.Runtime
                 {
                     if (shln.expression is null)
                     {
-                        Console.WriteLine("");
+                        Console.WriteLine("", CultureInfo.InvariantCulture);
                         continue;
                     }
                     object result = expressions.Evaluate(shln.expression, scope);

@@ -272,6 +272,23 @@ namespace Classes.Runtime
                 return Operators.LessThan(runtime, left, right);
             }
 
+            if (expression is NegateExpression neg)
+            {
+                object value = Evaluate(neg.expression, scope);
+
+                if (value is int num)
+                {
+                    return -num;
+                }
+
+                if (value is decimal decimalNumber)
+                {
+                    return -decimalNumber;
+                }
+
+                throw runtime.Error("Unary minus can only be used with NUM or DECIMAL");
+            }
+
             if (expression is LessOrEqual loe)
             {
                 object left = Evaluate(loe.left, scope);

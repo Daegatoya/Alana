@@ -32,6 +32,13 @@ namespace Classes.Runtime
                 return left_final + right_final;
             }
 
+            else if (left is decimal && right is decimal)
+            {
+                decimal left_final = (decimal)left;
+                decimal right_final = (decimal)right;
+                return left_final + right_final;
+            }
+
             else if (left is string && right is string)
             {
                 string left_final = (string)left;
@@ -79,6 +86,13 @@ namespace Classes.Runtime
                 return left_final - right_final;
             }
 
+            else if (left is decimal && right is decimal)
+            {
+                decimal left_final = (decimal)left;
+                decimal right_final = (decimal)right;
+                return left_final - right_final;
+            }
+
             return null;
         }
 
@@ -105,6 +119,13 @@ namespace Classes.Runtime
                 return left_final * right_final;
             }
 
+            else if (left is decimal && right is decimal)
+            {
+                decimal left_final = (decimal)left;
+                decimal right_final = (decimal)right;
+                return left_final * right_final;
+            }
+
             return null;
         }
 
@@ -127,6 +148,13 @@ namespace Classes.Runtime
             else if (left is int && right is decimal)
             {
                 int left_final = (int)left;
+                decimal right_final = (decimal)right;
+                return left_final / right_final;
+            }
+
+            else if (left is decimal && right is decimal)
+            {
+                decimal left_final = (decimal)left;
                 decimal right_final = (decimal)right;
                 return left_final / right_final;
             }
