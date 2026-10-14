@@ -108,10 +108,12 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Methods
 - [x] "Self" expression
 - [x] Object reference
+- [ ] Fields access
+- [ ] OOP type system
+- [ ] Object reassignment
+- [ ] Inheritance
 - [ ] Override
-- [ ] Type checking OOP
-- [ ] Exceptions
-- [ ] Polymorphism
+- [ ] Runtime polymorphism
 - [ ] Making you a sandwich (I already said I wouldn't add this feature.)
 
 </details>
