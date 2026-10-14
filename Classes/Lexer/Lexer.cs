@@ -64,6 +64,7 @@ namespace Classes.Lexer
             ["import"] = Type.IMPORT,
             ["public"] = Type.PUBLIC,
             ["private"] = Type.PRIVATE,
+            ["returning"] = Type.RETURN_TYPE,
         };
         private string source { get; }
         private int pos = 0;

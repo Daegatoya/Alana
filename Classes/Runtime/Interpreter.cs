@@ -146,11 +146,31 @@ namespace Classes.Runtime
 
                 if (result == null)
                 {
+                    if (function.return_type is not null)
+                    {
+                        throw Error($"Function {function.name} expected return type {function.return_type}" + $"{(function.returnIsArray ? "[]" : "")} but returned nothing");
+                    }
+
                     return null;
                 }
 
                 if (result.Flow == ExecFlow.Return)
                 {
+                    if (function.return_type is not null)
+                    {
+                        if (result.Value is null)
+                        {
+                            throw Error($"Function {function.name} expected return type {function.return_type}");
+                        }
+
+                        bool isRightReturnType = TypeChecker.CheckType(this, result.Value, function.return_type, function.returnIsArray);
+
+                        if (!isRightReturnType)
+                        {
+                            throw Error($"Function {function.name} expected return type {function.return_type}" + $"{(function.returnIsArray ? "[]" : "")}");
+                        }
+                    }
+
                     return result.Value;
                 }
 

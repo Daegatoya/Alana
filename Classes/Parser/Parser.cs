@@ -557,6 +557,8 @@ namespace Classes.Parser
             Visibility previous = visibility;
             List<Statement> body = new();
             List<Param> @params = new();
+            VarType? returnType = null;
+            bool returnIsArray = false;
 
             Use(Type.DEFINE);
             Use(Type.DEFFUNC);
@@ -590,6 +592,13 @@ namespace Classes.Parser
             }
 
             Use(Type.CLOSE);
+            if (tokens[pos].type != Type.END && tokens[pos].type == Type.RETURN_TYPE)
+            {
+                Use(Type.RETURN_TYPE);
+                Token type = Use(Type.BOOL, Type.STR, Type.CHAR, Type.DECIMAL, Type.NUM);
+                returnType = ParseVarType(type, name.value!);
+                returnIsArray = ParseArrayType();
+            }
             Use(Type.END);
 
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
@@ -605,7 +614,7 @@ namespace Classes.Parser
             Use(Type.END);
 
             visibility = previous;
-            return new DefFunction(functionVisibility, name.value!, @params, body);
+            return new DefFunction(functionVisibility, name.value!, @params, body, returnType, returnIsArray);
         }
         #endregion
 

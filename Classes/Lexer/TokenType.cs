@@ -68,5 +68,6 @@
     IMPORT,
     PUBLIC,
     PRIVATE,
-    TWODOTS
+    TWODOTS,
+    RETURN_TYPE,
 }

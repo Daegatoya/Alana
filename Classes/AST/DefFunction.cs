@@ -14,13 +14,17 @@ namespace Classes.AST
         public List<Statement>? body = new();
         public Visibility? visibility;
         public string? ownermodule;
+        public VarType? return_type;
+        public bool returnIsArray;
 
-        public DefFunction(Visibility? visibility, string name, List<Param>? parameters = null, List<Statement>? body = null)
+        public DefFunction(Visibility? visibility, string name, List<Param>? parameters = null, List<Statement>? body = null, VarType? return_type = null, bool returnIsArray = false)
         {
             this.name = name;
             this.parameters = parameters;
             this.body = body;
             this.visibility = visibility;
+            this.return_type = return_type;
+            this.returnIsArray = returnIsArray;
         }
     }
 }
