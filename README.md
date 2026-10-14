@@ -1,6 +1,6 @@
 # Alana v1.2
-![Alana Logo](alana.ico)
-### Write what you mean.
+<img src="alana.png" alt="Alana Logo" width="500">
+
 > Check out the official [Alana website](https://csalana.com)
 <hr>
 
