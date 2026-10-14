@@ -1,0 +1,35 @@
+{
+  "name": "alana-language",
+  "displayName": "Alana Language",
+  "description": "Syntax highlighting and language support for Alana.",
+  "version": "1.0.0",
+  "publisher": "alana",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "alana",
+        "aliases": [
+          "Alana",
+          "alana"
+        ],
+        "extensions": [
+          ".alana"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "alana",
+        "scopeName": "source.alana",
+        "path": "./syntaxes/alana.tmLanguage.json"
+      }
+    ]
+  }
+}
