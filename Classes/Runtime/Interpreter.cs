@@ -111,10 +111,10 @@ namespace Classes.Runtime
             {
                 ExecResult? result = executor.Execute(constructor.body, scope);
 
-                if (result != null)
-                {
-                    if (result.Flow == ExecFlow.Return)
+                    if (result != null)
                     {
+                        if (result.Flow == ExecFlow.Return)
+                        {
                         throw Error($"Constructor for {instance.definition.name} cannot return a value");
                     }
 
@@ -137,9 +137,9 @@ namespace Classes.Runtime
             if (call.objectName == "self")
             {
                 instance = callerScope.currentInstance ?? throw Error("self can only be used inside a class");
-            }
-            else
-            {
+                    }
+                    else
+                    {
                 instance = callerScope.GetObject(call.objectName);
             }
 
