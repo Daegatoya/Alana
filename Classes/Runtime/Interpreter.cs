@@ -91,15 +91,31 @@ namespace Classes.Runtime
             {
                 Param parameter = constructor.parameters[i];
                 Expression argument = arguments[i];
-
                 object value = evaluator.Evaluate(argument, callerScope);
 
-                if (!TypeChecker.CheckType(this, value, parameter.type, parameter.isArray))
+                if (parameter.className != null)
                 {
-                    throw Error($"Parsed argument {value} has the wrong type for parameter " + $"{parameter.name} of type {parameter.type}");
-                }
+                    if (value is not ClassInstance objectValue)
+                    {
+                        throw Error($"Parameter {parameter.name} expected object of class {parameter.className}");
+                    }
 
-                scope.Define(parameter.name, new RunTimeVariable(parameter.type, value, true, parameter.isArray));
+                    if (objectValue.definition.name != parameter.className)
+                    {
+                        throw Error($"Parameter {parameter.name} expected {parameter.className} " + $"but received {objectValue.definition.name}");
+                    }
+
+                    scope.DefineObject(parameter.name, objectValue, Visibility.PRIVATE, null);
+                }
+                else
+                {
+                    if (!TypeChecker.CheckType(this, value, parameter.type!.Value, parameter.isArray))
+                    {
+                        throw Error($"Parsed argument {value} has the wrong type for parameter " + $"{parameter.name} of type {parameter.type}");
+                    }
+
+                    scope.Define(parameter.name, new RunTimeVariable(parameter.type.Value, value, true, parameter.isArray));
+                }
             }
 
             if (instance.definition.ownermodule != null)
@@ -132,15 +148,11 @@ namespace Classes.Runtime
 
         internal object? InvokeMethod(MethodCall call, Scope callerScope)
         {
-            ClassInstance instance;
+            object target = evaluator.Evaluate(call.target, callerScope);
 
-            if (call.objectName == "self")
+            if (target is not ClassInstance instance)
             {
-                instance = callerScope.currentInstance ?? throw Error("self can only be used inside a class");
-                    }
-                    else
-                    {
-                instance = callerScope.GetObject(call.objectName);
+                throw Error($"Cannot call method {call.methodName} on a non-object value");
             }
 
             DefFunction? method = instance.definition.methods.FirstOrDefault(m => m.name == call.methodName);
@@ -176,12 +188,29 @@ namespace Classes.Runtime
 
                 object value = evaluator.Evaluate(argument, callerScope);
 
-                if (!TypeChecker.CheckType(this, value, parameter.type, parameter.isArray))
+                if (parameter.className != null)
                 {
-                    throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {parameter.name} of type {parameter.type}");
-                }
+                    if (value is not ClassInstance objectValue)
+                    {
+                        throw Error($"Parameter {parameter.name} expected object " + $"of class {parameter.className}");
+                    }
 
-                scope.Define(parameter.name, new RunTimeVariable(parameter.type, value, true, parameter.isArray));
+                    if (objectValue.definition.name != parameter.className)
+                    {
+                        throw Error($"Parameter {parameter.name} expected " + $"{parameter.className} but received " + $"{objectValue.definition.name}");
+                    }
+
+                    scope.DefineObject(parameter.name, objectValue, Visibility.PRIVATE, null);
+                }
+                else
+                {
+                    if (!TypeChecker.CheckType(this, value, parameter.type!.Value, parameter.isArray))
+                    {
+                        throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {parameter.name} of type {parameter.type}");
+                    }
+
+                    scope.Define(parameter.name, new RunTimeVariable(parameter.type.Value, value, true, parameter.isArray));
+                }
             }
 
             if (instance.definition.ownermodule != null)
@@ -205,9 +234,11 @@ namespace Classes.Runtime
 
             if (result == null)
             {
-                if (method.return_type is not null)
+                if (method.return_type is not null || method.returnClassName is not null)
                 {
-                    throw Error($"Method {method.name} expected return type " + $"{method.return_type}" + $"{(method.returnIsArray ? "[]" : "")} " + $"but returned nothing");
+                    string expected = method.returnClassName ?? method.return_type.ToString()!;
+
+                    throw Error($"Method {method.name} expected return type " + $"{expected} but returned nothing");
                 }
 
                 return null;
@@ -215,7 +246,19 @@ namespace Classes.Runtime
 
             if (result.Flow == ExecFlow.Return)
             {
-                if (method.return_type is not null)
+                if (method.returnClassName != null)
+                {
+                    if (result.Value is not ClassInstance objectValue)
+                    {
+                        throw Error($"Method {method.name} expected return type " + $"{method.returnClassName}");
+                    }
+
+                    if (objectValue.definition.name != method.returnClassName)
+                    {
+                        throw Error($"Method {method.name} expected return type " + $"{method.returnClassName} but returned " + $"{objectValue.definition.name}");
+                    }
+                }
+                else if (method.return_type is not null)
                 {
                     if (result.Value is null)
                     {
@@ -239,11 +282,8 @@ namespace Classes.Runtime
         internal ClassInstance InstantiateClass(string className, List<Expression> arguments, Scope callerScope)
         {
             DefClass definition = ResolveClass(className);
-
             Scope fieldScope = globals.CreateChild();
-
             ClassInstance instance = new ClassInstance(definition, fieldScope);
-
             fieldScope.currentInstance = instance;
 
             if (definition.ownermodule != null)
@@ -261,6 +301,22 @@ namespace Classes.Runtime
                     {
                         throw FlowError(result.Flow);
                     }
+                }
+                foreach (DefineObject field in definition.objectFields)
+                {
+                    object value = evaluator.Evaluate(field.value, instance.fields);
+
+                    if (value is not ClassInstance objectValue)
+                    {
+                        throw Error($"Expected object of class {field.className}");
+                    }
+
+                    if (objectValue.definition.name != field.className)
+                    {
+                        throw Error($"Expected object of class {field.className} " + $"but received {objectValue.definition.name}");
+                    }
+
+                    instance.fields.DefineObject(field.name, objectValue, field.visibility, definition.ownermodule);
                 }
             }
             finally
@@ -409,13 +465,31 @@ namespace Classes.Runtime
                 {
                     Param p = function.parameters[i];
                     Expression arg = call.arguments[i];
-                    object a_value = evaluator.Evaluate(arg, callerScope);
+                    object value = evaluator.Evaluate(arg, callerScope);
 
-                    if (!TypeChecker.CheckType(this, a_value, p.type, p.isArray))
+                    if (p.className != null)
                     {
-                        throw Error($"Parsed argument {a_value} has the wrong type for parameter {p.name} of type {p.type}");
+                        if (value is not ClassInstance objectValue)
+                        {
+                            throw Error($"Parameter {p.name} expected object of class {p.className}");
+                        }
+
+                        if (objectValue.definition.name != p.className)
+                        {
+                            throw Error($"Parameter {p.name} expected {p.className} " + $"but received {objectValue.definition.name}");
+                        }
+
+                        scope.DefineObject(p.name, objectValue, Visibility.PRIVATE, null);
                     }
-                    scope.Define(p.name, new RunTimeVariable(p.type, a_value, true, p.isArray));
+                    else
+                    {
+                        if (!TypeChecker.CheckType(this, value, p.type!.Value, p.isArray))
+                        {
+                            throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {p.name} of type {p.type}");
+                        }
+
+                        scope.Define(p.name, new RunTimeVariable(p.type.Value, value, true, p.isArray));
+                    }
                 }
 
                 if (function.ownermodule != null)
@@ -439,9 +513,11 @@ namespace Classes.Runtime
 
                 if (result == null)
                 {
-                    if (function.return_type is not null)
+                    if (function.return_type is not null || function.returnClassName is not null)
                     {
-                        throw Error($"Function {function.name} expected return type {function.return_type}" + $"{(function.returnIsArray ? "[]" : "")} but returned nothing");
+                        string expected = function.returnClassName ?? function.return_type.ToString()!;
+
+                        throw Error($"Function {function.name} expected return type " + $"{expected} but returned nothing");
                     }
 
                     return null;
@@ -449,18 +525,30 @@ namespace Classes.Runtime
 
                 if (result.Flow == ExecFlow.Return)
                 {
-                    if (function.return_type is not null)
+                    if (function.returnClassName != null)
+                    {
+                        if (result.Value is not ClassInstance objectValue)
+                        {
+                            throw Error($"Function {function.name} expected return type " + $"{function.returnClassName}");
+                        }
+
+                        if (objectValue.definition.name != function.returnClassName)
+                        {
+                            throw Error($"Function {function.name} expected return type " + $"{function.returnClassName} but returned " + $"{objectValue.definition.name}");
+                        }
+                    }
+                    else if (function.return_type is not null)
                     {
                         if (result.Value is null)
                         {
-                            throw Error($"Function {function.name} expected return type {function.return_type}");
+                            throw Error($"Function {function.name} expected return type " + $"{function.return_type}" + $"{(function.returnIsArray ? "[]" : "")}");
                         }
 
                         bool isRightReturnType = TypeChecker.CheckType(this, result.Value, function.return_type, function.returnIsArray);
 
                         if (!isRightReturnType)
                         {
-                            throw Error($"Function {function.name} expected return type {function.return_type}" + $"{(function.returnIsArray ? "[]" : "")}");
+                            throw Error($"Function {function.name} expected return type " + $"{function.return_type}" + $"{(function.returnIsArray ? "[]" : "")}");
                         }
                     }
 

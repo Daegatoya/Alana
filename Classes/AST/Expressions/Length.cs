@@ -8,11 +8,11 @@ namespace Classes.AST.Expressions
 {
     public class Length : Expression
     {
-        public string name;
+        public Expression target;
 
-        public Length(string name)
+        public Length(Expression target)
         {
-            this.name = name;
+            this.target = target;
         }
     }
 }

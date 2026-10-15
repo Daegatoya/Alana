@@ -181,6 +181,44 @@ namespace Classes.Runtime
             return variable;
         }
 
+        public void SetObjectLocal(string name, ClassInstance instance)
+        {
+            string current = runtime.moduleLoader.CurrentFile;
+            string privateKey = current + "::" + name;
+
+            if (objects.TryGetValue(privateKey, out RunTimeObject? privateObject))
+            {
+                privateObject.instance = instance;
+                return;
+            }
+
+            if (objects.TryGetValue(name, out RunTimeObject? publicObject))
+            {
+                publicObject.instance = instance;
+                return;
+            }
+
+            throw runtime.Error($"Object field {name} can't be found");
+        }
+
+        public ClassInstance GetObjectLocal(string name)
+        {
+            string current = runtime.moduleLoader.CurrentFile;
+            string privateKey = current + "::" + name;
+
+            if (objects.TryGetValue(privateKey, out RunTimeObject? privateObject))
+            {
+                return privateObject.instance;
+            }
+
+            if (objects.TryGetValue(name, out RunTimeObject? publicObject))
+            {
+                return publicObject.instance;
+            }
+
+            throw runtime.Error($"Object field {name} can't be found");
+        }
+
         public RunTimeVariable Get(string name)
         {
             RunTimeVariable? variable = Find(name);

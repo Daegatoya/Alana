@@ -1,3 +1,4 @@
+using Classes.AST.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,18 +9,18 @@ namespace Classes.AST
 {
     public class ForEveryStatement : Statement
     {
-        public string name = string.Empty;
         public VarType type;
-        public bool isArray = false;
-        public string array = string.Empty;
+        public string name;
+        public bool isArray;
+        public Expression target;
         public List<Statement> body;
 
-        public ForEveryStatement(string name, VarType type, bool isArray, string array, List<Statement> body)
+        public ForEveryStatement(string name, VarType type, bool isArray, Expression target, List<Statement> body)
         {
             this.name = name;
             this.type = type;
             this.isArray = isArray;
-            this.array = array;
+            this.target = target;
             this.body = body;
         }
     }

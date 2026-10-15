@@ -73,64 +73,36 @@ namespace Classes.Runtime
                         }
                     }
                 }
-                else if (s is RedefineVar r)
-                {
-                    RunTimeVariable variable = scope.Get(r.name);
-
-                    if (r.value is NewExpression)
-                    {
-                        variable.value = null;
-                        variable.isInitialized = false;
-                        continue;
-                    }
-
-                    object value = expressions.Evaluate(r.value!, scope);
-                    TypeChecker.CheckType(runtime, value, variable.type, variable.isArray);
-
-                    variable.value = value;
-                    variable.isInitialized = true;
-                }
                 else if (s is PushStatement push)
                 {
-                    RunTimeVariable variable = scope.Get(push.name);
+                    object target = expressions.Evaluate(push.target, scope);
 
-                    if (!variable.isArray)
+                    if (target is not List<object> values)
                     {
-                        throw runtime.Error($"Variable {push.name} is not an array");
-                    }
-                    if (!variable.isInitialized)
-                    {
-                        throw runtime.Error($"Variable {push.name} is not initialized");
-                    }
-                    if (variable.value is not List<object> values)
-                    {
-                        throw runtime.Error($"Variable {push.name} does not contain a valid array");
+                        throw runtime.Error("push target is not an array");
                     }
 
                     object toPush = expressions.Evaluate(push.value, scope);
-                    TypeChecker.CheckType(runtime, toPush, variable.type);
+                    VarType elementType = GetArrayElementType(push.target, scope);
+
+                    TypeChecker.CheckType(runtime, toPush, elementType);
+
                     values.Add(toPush);
                 }
                 else if (s is PopStatement pop)
                 {
-                    RunTimeVariable variable = scope.Get(pop.name);
+                    object target = expressions.Evaluate(pop.target, scope);
 
-                    if (!variable.isArray)
+                    if (target is not List<object> values)
                     {
-                        throw runtime.Error($"Variable {pop.name} is not an array");
+                        throw runtime.Error("pop target is not an array");
                     }
-                    if (!variable.isInitialized)
-                    {
-                        throw runtime.Error($"Variable {pop.name} is not initialized");
-                    }
-                    if (variable.value is not List<object> values)
-                    {
-                        throw runtime.Error($"Variable {pop.name} does not contain a valid array");
-                    }
+
                     if (values.Count == 0)
                     {
-                        throw runtime.Error($"Cannot pop from empty array {pop.name}");
+                        throw runtime.Error("Cannot pop from an empty array");
                     }
+
                     values.RemoveAt(values.Count - 1);
                 }
                 else if (s is TryParseStatement tp)
@@ -198,37 +170,6 @@ namespace Classes.Runtime
                         success.value = false;
                         success.isInitialized = true;
                     }
-                }
-                else if (s is RedefineArrElement arr)
-                {
-                    RunTimeVariable variable = scope.Get(arr.name);
-
-                    if (!variable.isArray)
-                    {
-                        throw runtime.Error($"Variable {arr.name} is not an array");
-                    }
-                    if (!variable.isInitialized)
-                    {
-                        throw runtime.Error($"Variable {arr.name} is not initialized");
-                    }
-                    object indexValue = expressions.Evaluate(arr.index, scope);
-
-                    if (indexValue is not int index)
-                    {
-                        throw runtime.Error($"Array index must be NUM");
-                    }
-                    if (variable.value is not List<object> values)
-                    {
-                        throw runtime.Error($"Variable {arr.name} does not contain a valid array");
-                    }
-                    if (index < 0 || index >= values.Count)
-                    {
-                        throw runtime.Error($"Array index {index} is out of bounds");
-                    }
-
-                    object value = expressions.Evaluate(arr.value, scope);
-                    TypeChecker.CheckType(runtime, value, variable.type);
-                    values[index] = value;
                 }
                 else if (s is Show sh)
                 {
@@ -310,23 +251,17 @@ namespace Classes.Runtime
                 {
                     runtime.DefineClass(defC);
                 }
-                else if (s is RedefineSelfField redefineField)
+                else if (s is RedefineTarget redef)
                 {
-                    ClassInstance? instance = scope.currentInstance;
-
-                    if (instance == null)
+                    if (redef.value is NewExpression)
                     {
-                        throw runtime.Error("self can only be used inside a class");
+                        Uninitialize(redef.target, scope);
+                        continue;
                     }
 
-                    RunTimeVariable field = instance.fields.GetLocal(redefineField.fieldName);
+                    object value = expressions.Evaluate(redef.value, scope);
 
-                    object value = expressions.Evaluate(redefineField.value, scope);
-
-                    TypeChecker.CheckType(runtime, value, field.type, field.isArray);
-
-                    field.value = value;
-                    field.isInitialized = true;
+                    Assign(redef.target, value, scope);
                 }
                 else if (s is DefineObject defObj)
                 {
@@ -358,6 +293,265 @@ namespace Classes.Runtime
             }
 
             return null;
+        }
+
+        private void Uninitialize(Expression target, Scope scope)
+        {
+            if (target is VarExpression variable)
+            {
+                RunTimeVariable runtimeVariable = scope.Get(variable.name);
+                runtimeVariable.value = null;
+                runtimeVariable.isInitialized = false;
+
+                return;
+            }
+
+            if (target is SelfField selfField)
+            {
+                ClassInstance? instance = scope.currentInstance;
+
+                if (instance == null)
+                {
+                    throw runtime.Error("self can only be used inside a class");
+                }
+
+                RunTimeVariable field = instance.fields.GetLocal(selfField.fieldName);
+                field.value = null;
+                field.isInitialized = false;
+
+                return;
+            }
+
+            if (target is FieldAccess fieldAccess)
+            {
+                object owner = expressions.Evaluate(fieldAccess.target, scope);
+
+                if (owner is not ClassInstance instance)
+                {
+                    throw runtime.Error("Cannot uninitialize field on a non-object value");
+                }
+
+                RunTimeVariable field = instance.fields.GetLocal(fieldAccess.fieldName);
+                field.value = null;
+                field.isInitialized = false;
+
+                return;
+            }
+
+            throw runtime.Error("This target cannot be set to new");
+        }
+
+        private VarType GetArrayElementType(Expression target, Scope scope)
+        {
+            if (target is VarExpression variable)
+            {
+                RunTimeVariable array = scope.Get(variable.name);
+
+                if (!array.isArray)
+                {
+                    throw runtime.Error($"Variable {variable.name} is not an array");
+                }
+
+                return array.type;
+            }
+
+            if (target is SelfField selfField)
+            {
+                ClassInstance? instance = scope.currentInstance;
+
+                if (instance == null)
+                {
+                    throw runtime.Error("self can only be used inside a class");
+                }
+
+                RunTimeVariable array = instance.fields.GetLocal(selfField.fieldName);
+
+                if (!array.isArray)
+                {
+                    throw runtime.Error($"Field {selfField.fieldName} is not an array");
+                }
+
+                return array.type;
+            }
+
+            if (target is FieldAccess fieldAccess)
+            {
+                object owner =
+                    expressions.Evaluate(fieldAccess.target, scope
+);
+
+                if (owner is not ClassInstance instance)
+                {
+                    throw runtime.Error("Array field belongs to a non-object value");
+                }
+
+                RunTimeVariable array = instance.fields.GetLocal(fieldAccess.fieldName);
+
+                if (!array.isArray)
+                {
+                    throw runtime.Error($"Field {fieldAccess.fieldName} is not an array");
+                }
+
+                return array.type;
+            }
+
+            throw runtime.Error("Unable to determine array element type");
+        }
+
+        private void AssignArrayElement(ArrayAccessExpression access, object value, Scope scope)
+        {
+            object target = expressions.Evaluate(access.target, scope);
+
+            if (target is not List<object> values)
+            {
+                throw runtime.Error("Target is not an array");
+            }
+
+            object indexValue = expressions.Evaluate(access.index, scope);
+
+            if (indexValue is not int index)
+            {
+                throw runtime.Error("Array index must be NUM");
+            }
+
+            if (index < 0 || index >= values.Count)
+            {
+                throw runtime.Error($"Array index {index} is out of bounds");
+            }
+
+            VarType elementType = GetArrayElementType(access.target, scope);
+
+            TypeChecker.CheckType(runtime, value, elementType);
+
+            values[index] = value;
+        }
+
+        private void Assign(Expression target, object value, Scope scope)
+        {
+            if (target is VarExpression variable)
+            {
+                RunTimeVariable runtimeVariable = scope.Get(variable.name);
+
+                TypeChecker.CheckType(runtime, value, runtimeVariable.type, runtimeVariable.isArray);
+
+                runtimeVariable.value = value;
+                runtimeVariable.isInitialized = true;
+
+                return;
+            }
+
+            if (target is SelfField selfField)
+            {
+                ClassInstance? instance = scope.currentInstance;
+
+                if (instance == null)
+                {
+                    throw runtime.Error("self can only be used inside a class");
+                }
+
+                DefineVar? primitiveField = instance.definition.fields.FirstOrDefault(f => f.name == selfField.fieldName);
+
+                DefineObject? objectField = instance.definition.objectFields.FirstOrDefault(f => f.name == selfField.fieldName);
+
+                if (primitiveField == null && objectField == null)
+                {
+                    throw runtime.Error($"Field {selfField.fieldName} can't be found");
+                }
+
+                if (primitiveField != null)
+                {
+                    TypeChecker.CheckType(runtime, value, primitiveField.type, primitiveField.isArray);
+                    RunTimeVariable selfVariable = instance.fields.GetLocal(selfField.fieldName);
+
+                    selfVariable.value = value;
+                    selfVariable.isInitialized = true;
+
+                    return;
+                }
+
+                if (objectField != null)
+                {
+                    if (value is not ClassInstance objectValue)
+                    {
+                        throw runtime.Error($"Field {selfField.fieldName} expected object " + $"of class {objectField.className}");
+                    }
+
+                    if (objectValue.definition.name != objectField.className)
+                    {
+                        throw runtime.Error($"Field {selfField.fieldName} expected " + $"{objectField.className} but received " + $"{objectValue.definition.name}");
+                    }
+
+                    instance.fields.SetObjectLocal(selfField.fieldName, objectValue);
+
+                    return;
+                }
+            }
+
+            if (target is FieldAccess fieldAccess)
+            {
+                object owner = expressions.Evaluate(fieldAccess.target, scope);
+
+                if (owner is not ClassInstance instance)
+                {
+                    throw runtime.Error($"Cannot redefine field {fieldAccess.fieldName} on a non-object value");
+                }
+
+                DefineVar? primitiveDefinition = instance.definition.fields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+                DefineObject? objectDefinition = instance.definition.objectFields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+
+                if (primitiveDefinition == null && objectDefinition == null)
+                {
+                    throw runtime.Error($"Class {instance.definition.name} has no field {fieldAccess.fieldName}");
+                }
+
+                Visibility? visibility = primitiveDefinition?.visibility ?? objectDefinition?.visibility;
+
+                if (visibility == Visibility.PRIVATE)
+                {
+                    ClassInstance? caller = scope.currentInstance;
+
+                    if (caller == null || caller.definition != instance.definition)
+                    {
+                        throw runtime.Error($"Field {fieldAccess.fieldName} is private");
+                    }
+                }
+
+                if (primitiveDefinition != null)
+                {
+                    RunTimeVariable field = instance.fields.GetLocal(fieldAccess.fieldName);
+
+                    TypeChecker.CheckType(runtime, value, field.type, field.isArray);
+
+                    field.value = value;
+                    field.isInitialized = true;
+                    return;
+                }
+
+                if (objectDefinition != null)
+                {
+                    if (value is not ClassInstance objectValue)
+                    {
+                        throw runtime.Error($"Expected object of class {objectDefinition.className}");
+                    }
+
+                    if (objectValue.definition.name != objectDefinition.className)
+                    {
+                        throw runtime.Error($"Expected object of class {objectDefinition.className} " + $"but received {objectValue.definition.name}");
+                    }
+
+                    instance.fields.SetObjectLocal(fieldAccess.fieldName, objectValue);
+
+                    return;
+                }
+            }
+
+            if (target is ArrayAccessExpression arrayAccess)
+            {
+                AssignArrayElement(arrayAccess, value, scope);
+                return;
+            }
+
+            throw runtime.Error("Invalid redefine target");
         }
 
         private ExecResult? ExecuteIfStatement(IfStatement ifStatement, Scope currentScope)
@@ -459,19 +653,11 @@ namespace Classes.Runtime
 
         private ExecResult? ExecuteForEveryStatement(ForEveryStatement forEveryStatement, Scope currentScope)
         {
-            RunTimeVariable variable = currentScope.Get(forEveryStatement.array);
+            object target = expressions.Evaluate(forEveryStatement.target, currentScope);
 
-            if (!variable.isArray)
+            if (target is not List<object> values)
             {
-                throw runtime.Error($"Variable {forEveryStatement.array} is not an array");
-            }
-            if (!variable.isInitialized)
-            {
-                throw runtime.Error($"Variable {forEveryStatement.array} is not initialized");
-            }
-            if (variable.value is not List<object> values)
-            {
-                throw runtime.Error($"Variable {forEveryStatement.array} does not contain a valid array");
+                throw runtime.Error("forevery target is not an array");
             }
 
             for (int i = 0; i < values.Count; i++)
@@ -481,16 +667,25 @@ namespace Classes.Runtime
                 TypeChecker.CheckType(runtime, element, forEveryStatement.type, forEveryStatement.isArray);
 
                 Scope loopScope = currentScope.CreateChild();
-
                 loopScope.Define(forEveryStatement.name, new RunTimeVariable(forEveryStatement.type, element, true, forEveryStatement.isArray));
-
                 ExecResult? result = Execute(forEveryStatement.body, loopScope);
 
                 if (result != null)
                 {
-                    if (result.Flow == ExecFlow.Return) return result;
+                    if (result.Flow == ExecFlow.Return)
+                    {
+                        return result;
+                    }
 
-                    if (result.Flow == ExecFlow.Break) break;
+                    if (result.Flow == ExecFlow.Break)
+                    {
+                        break;
+                    }
+
+                    if (result.Flow == ExecFlow.Continue)
+                    {
+                        continue;
+                    }
                 }
             }
 

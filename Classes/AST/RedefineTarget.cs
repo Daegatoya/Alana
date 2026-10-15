@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Classes.AST
 {
-    public class RedefineVar : Statement
+    public class RedefineTarget : Statement
     {
-        public string name {  get; set; } = string.Empty;
-        public Expression? value { get; set; }
+        public Expression target;
+        public Expression value;
 
-        public RedefineVar(string name, Expression? value)
+        public RedefineTarget(Expression target, Expression value)
         {
-            this.name = name;
+            this.target = target;
             this.value = value;
         }
     }

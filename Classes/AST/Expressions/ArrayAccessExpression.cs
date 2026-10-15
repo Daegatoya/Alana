@@ -8,12 +8,12 @@ namespace Classes.AST.Expressions
 {
     public class ArrayAccessExpression : Expression
     {
-        public string name;
+        public Expression target;
         public Expression index;
 
-        public ArrayAccessExpression(string name, Expression index)
+        public ArrayAccessExpression(Expression target, Expression index)
         {
-            this.name = name;
+            this.target = target;
             this.index = index;
         }
     }

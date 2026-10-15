@@ -9,12 +9,12 @@ namespace Classes.AST
 {
     public class PushStatement : Statement
     {
-        public string name;
+        public Expression target;
         public Expression value;
 
-        public PushStatement(string name, Expression value)
+        public PushStatement(Expression target, Expression value)
         {
-            this.name = name;
+            this.target = target;
             this.value = value;
         }
     }

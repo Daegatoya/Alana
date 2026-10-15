@@ -8,13 +8,13 @@ namespace Classes.AST.Expressions
 {
     public class MethodCall : Expression
     {
-        public string objectName;
+        public Expression target;
         public string methodName;
         public List<Expression> arguments;
 
-        public MethodCall(string objectName, string methodName, List<Expression> arguments)
+        public MethodCall(Expression target, string methodName, List<Expression> arguments)
         {
-            this.objectName = objectName;
+            this.target = target;
             this.methodName = methodName;
             this.arguments = arguments;
         }

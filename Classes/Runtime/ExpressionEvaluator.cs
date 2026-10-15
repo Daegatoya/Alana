@@ -1,3 +1,4 @@
+using Classes.AST;
 using Classes.AST.Expressions;
 using System;
 using System.Collections.Generic;
@@ -22,32 +23,72 @@ namespace Classes.Runtime
 
             if (expression is ArrayAccessExpression arrayAccess)
             {
-                RunTimeVariable accessVariable = scope.Get(arrayAccess.name);
+                object target = Evaluate(arrayAccess.target, scope);
 
-                if (!accessVariable.isArray)
-                {
-                    throw runtime.Error($"Variable {arrayAccess.name} is not an array");
-                }
-                if (!accessVariable.isInitialized)
-                {
-                    throw runtime.Error($"Variable {arrayAccess.name} is not initialized");
-                }
                 object indexValue = Evaluate(arrayAccess.index, scope);
 
                 if (indexValue is not int index)
                 {
                     throw runtime.Error("Array index must be NUM");
                 }
-                if (accessVariable.value is not List<object> values)
+
+                if (target is not List<object> values)
                 {
-                    throw runtime.Error($"Variable {arrayAccess.name} does not contain a valid array");
+                    throw runtime.Error("Value is not an array");
                 }
+
                 if (index < 0 || index >= values.Count)
                 {
                     throw runtime.Error($"Array index {index} is out of bounds");
                 }
 
                 return values[index];
+            }
+
+            if (expression is FieldAccess fieldAccess)
+            {
+                object target = Evaluate(fieldAccess.target, scope);
+
+                if (target is not ClassInstance instance)
+                {
+                    throw runtime.Error($"Cannot access field {fieldAccess.fieldName} on a non-object value");
+                }
+
+                DefineVar? primitiveDefinition = instance.definition.fields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+
+                DefineObject? objectDefinition = instance.definition.objectFields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+
+                if (primitiveDefinition == null && objectDefinition == null)
+                {
+                    throw runtime.Error($"Class {instance.definition.name} has no field {fieldAccess.fieldName}");
+                }
+
+                Visibility? visibility = primitiveDefinition?.visibility ?? objectDefinition?.visibility;
+
+                if (visibility == Visibility.PRIVATE)
+                {
+                    ClassInstance? callerInstance = scope.currentInstance;
+
+                    if (callerInstance == null || callerInstance.definition != instance.definition)
+                    {
+                        throw runtime.Error($"Field {fieldAccess.fieldName} is private");
+                    }
+                }
+
+                if (primitiveDefinition != null)
+                {
+                    RunTimeVariable field = instance.fields.GetLocal(fieldAccess.fieldName);
+
+                    if (!field.isInitialized)
+                    {
+                        throw runtime.Error($"Field {fieldAccess.fieldName} is not initialized");
+                    }
+
+                    return field.value!;
+                }
+
+                ClassInstance objectField = instance.fields.GetObjectLocal(fieldAccess.fieldName);
+                return objectField;
             }
 
             if (expression is ArrayExpression array)
@@ -116,18 +157,37 @@ namespace Classes.Runtime
                     throw runtime.Error("self can only be used inside a class");
                 }
 
-                RunTimeVariable field = instance.fields.GetLocal(selfField.fieldName);
+                DefineVar? primitiveDefinition = instance.definition.fields.FirstOrDefault(f => f.name == selfField.fieldName);
 
-                if (!field.isInitialized)
+                if (primitiveDefinition != null)
                 {
-                    throw runtime.Error($"Field {selfField.fieldName} is not initialized");
+                    RunTimeVariable field = instance.fields.GetLocal(selfField.fieldName);
+
+                    if (!field.isInitialized)
+                    {
+                        throw runtime.Error($"Field {selfField.fieldName} is not initialized");
+                    }
+
+                    return field.value!;
                 }
 
-                return field.value!;
+                DefineObject? objectDefinition = instance.definition.objectFields.FirstOrDefault(f => f.name == selfField.fieldName);
+
+                if (objectDefinition != null)
+                {
+                    return instance.fields.GetObjectLocal(selfField.fieldName);
+                }
+
+                throw runtime.Error($"Class {instance.definition.name} has no field {selfField.fieldName}");
             }
 
             if (expression is VarExpression variable)
             {
+                if (variable.name == "self")
+                {
+                    return scope.currentInstance ?? throw runtime.Error("self can only be used inside a class");
+                }
+
                 RunTimeVariable? primitive = scope.Find(variable.name);
 
                 if (primitive != null)
@@ -187,25 +247,17 @@ namespace Classes.Runtime
 
             if (expression is Length length)
             {
-                RunTimeVariable runtimeVar = scope.Get(length.name);
+                object target = Evaluate(length.target, scope);
 
-                if (!runtimeVar.isArray)
+                if (target is not List<object> values)
                 {
-                    throw runtime.Error($"Variable {length.name} is not an array");
-                }
-                if (!runtimeVar.isInitialized)
-                {
-                    throw runtime.Error($"Variable {length.name} is not initialized");
+                    throw runtime.Error("length can only be used on an array");
                 }
 
-                if (runtimeVar.value is not List<object> values)
-                {
-                    throw runtime.Error($"Variable {length.name} does not contain a valid array");
-                }
                 return values.Count;
             }
 
-            if(expression is NewObject newO)
+            if (expression is NewObject newO)
             {
                 return runtime.InstantiateClass(newO.className, newO.arguments, scope);
             }

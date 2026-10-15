@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Classes.AST.Expressions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,11 +9,11 @@ namespace Classes.AST
 {
     public class PopStatement : Statement
     {
-        public string name;
+        public Expression target;
 
-        public PopStatement(string name)
+        public PopStatement(Expression target)
         {
-            this.name = name;
+            this.target = target;
         }
     }
 }
