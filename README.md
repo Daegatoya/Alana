@@ -1,4 +1,4 @@
-# Alana v1.2
+# Alana v1.4
 <img src="alana.png" alt="Alana Logo" width="500">
 
 > Check out the official [Alana website](https://csalana.com)
@@ -585,4 +585,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026 | Alana v1.2
+> Copyright © Daegatoya - 2026 | Alana v1.4
