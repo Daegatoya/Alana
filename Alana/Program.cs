@@ -23,7 +23,7 @@ namespace Alana
 
                 if (args[0] == "--version")
                 {
-                    Console.WriteLine("Alana 1.3");
+                    Console.WriteLine("Alana 1.4");
                     return;
                 }
 
