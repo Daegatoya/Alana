@@ -108,9 +108,9 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Methods
 - [x] "Self" expression
 - [x] Object reference
-- [ ] Fields access
-- [ ] OOP type system
-- [ ] Object reassignment
+- [x] Fields access
+- [x] OOP type system
+- [x] Object reassignment
 - [ ] Inheritance
 - [ ] Override
 - [ ] Runtime polymorphism
