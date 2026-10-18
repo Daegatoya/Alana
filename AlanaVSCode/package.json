@@ -21,6 +21,10 @@
         "extensions": [
           ".alana"
         ],
+        "icon": {
+          "light": "./logo.svg",
+          "dark": "./logo.svg"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
