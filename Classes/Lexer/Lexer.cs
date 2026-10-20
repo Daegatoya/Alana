@@ -81,6 +81,49 @@ namespace Classes.Lexer
             sources = source.Split('\n');
         }
 
+        private string StripComment(string line)
+        {
+            bool inString = false;
+            bool inChar = false;
+            bool escaped = false;
+
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (c == '\\')
+                {
+                    escaped = true;
+                    continue;
+                }
+
+                if (c == '"' && !inChar)
+                {
+                    inString = !inString;
+                    continue;
+                }
+
+                if (c == '\'' && !inString)
+                {
+                    inChar = !inChar;
+                    continue;
+                }
+
+                if (!inString && !inChar && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
+                {
+                    return line.Substring(0, i);
+                }
+            }
+
+            return line;
+        }
+
         public Token[] TranslateToken()
         {
             List<Token> tokens = new();
@@ -91,11 +134,17 @@ namespace Classes.Lexer
 
                 if (c == '\n')
                 {
-                    string currentLine = sources[line - 1].TrimEnd('\r', ' ', '\t');
+                    string currentLine = StripComment(sources[line - 1]);
+
+                    currentLine = currentLine.TrimEnd('\r', ' ', '\t');
                     string trimmed = currentLine.Trim();
-                    if (trimmed != "public:" && trimmed != "private:")
+
+                    if (trimmed.Length > 0 && trimmed != "public:" && trimmed != "private:")
                     {
-                        if (currentLine.Length > 0 && currentLine[^1] != '#') throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
+                        if (currentLine[^1] != '#')
+                        {
+                            throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
+                        }
                     }
                     line++;
                     col = 1;
@@ -108,6 +157,24 @@ namespace Classes.Lexer
                     pos++;
                     col++;
                     continue;
+                }
+
+                if (c == '/')
+                {
+                    if (pos + 1 < source.Length && source[pos + 1] == '/')
+                    {
+                        while (pos < source.Length && source[pos] != '\n')
+                        {
+                            pos++;
+                            col++;
+                        }
+
+                        continue;
+                    }
+                    else
+                    {
+                        throw new AlanaError("Invalid character / - maybe you meant // ?", line, col, sources[line - 1]);
+                    }
                 }
 
                 else if(c == '#')
