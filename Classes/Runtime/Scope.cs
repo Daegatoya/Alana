@@ -242,5 +242,15 @@ namespace Classes.Runtime
 
             return instance;
         }
+
+        public IEnumerable<KeyValuePair<string, RunTimeVariable>> GetLocalVariables()
+        {
+            return variables;
+        }
+
+        public IEnumerable<KeyValuePair<string, RunTimeObject>> GetLocalObjects()
+        {
+            return objects;
+        }
     }
 }

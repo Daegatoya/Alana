@@ -14,6 +14,7 @@ namespace Classes.AST
         DECIMAL,
         BOOL,
         CHAR,
+        ANY,
     }
     public class DefineVar : Statement
     {

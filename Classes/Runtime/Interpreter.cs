@@ -17,6 +17,7 @@ namespace Classes.Runtime
         private Scope globals;
         private ExpressionEvaluator evaluator;
         private StatementExecutor executor;
+        private NativeFunctions nativeFunctions;
         public ModuleLoader moduleLoader;
 
         internal int line, col;
@@ -28,6 +29,7 @@ namespace Classes.Runtime
             executor = new StatementExecutor(this, evaluator);
             globals = new Scope(this);
             moduleLoader = new ModuleLoader(this, entryFile);
+            nativeFunctions = new NativeFunctions(this, evaluator);
         }
 
         internal AlanaError Error(string message)
@@ -440,6 +442,10 @@ namespace Classes.Runtime
 
         internal object? Invoke(FuncCall call, Scope callerScope)
         {
+            if (nativeFunctions.Exists(call.name))
+            {
+                return nativeFunctions.Invoke(call.name, call.arguments, callerScope);
+            }
             string privateKey = moduleLoader.CurrentFile + "::" + call.name;
             DefFunction? function = null;
 

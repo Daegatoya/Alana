@@ -192,6 +192,7 @@ namespace Classes.Runtime
             if (left is string leftString && right is string rightString) return leftString == rightString;
             if (left is char leftChar && right is char rightChar) return leftChar == rightChar;
             if (left is bool leftBool && right is bool rightBool) return leftBool == rightBool;
+            if (left is ClassInstance leftObject && right is ClassInstance rightObject) return leftObject == rightObject;
 
             throw runtime.Error($"Comparison error: cannot compare {left.GetType().Name} with {right.GetType().Name} using SameAs");
         }

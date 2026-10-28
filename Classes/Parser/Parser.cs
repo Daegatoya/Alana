@@ -143,6 +143,11 @@ namespace Classes.Parser
                 return ParseVariable(Type.CHAR, VarType.CHAR);
             }
 
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.ANY)
+            {
+                return ParseVariable(Type.ANY, VarType.ANY);
+            }
+
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
             {
                 return ParseFunction();
@@ -319,6 +324,7 @@ namespace Classes.Parser
                 Type.CHAR => VarType.CHAR,
                 Type.DECIMAL => VarType.DECIMAL,
                 Type.BOOL => VarType.BOOL,
+                Type.ANY => VarType.ANY,
 
                 _ => throw new AlanaError($"Invalid type parsed for {target}", type_Token.line, type_Token.col, type_Token.source!)
             };
@@ -510,7 +516,7 @@ namespace Classes.Parser
             Use(Type.OPEN);
             Use(Type.DEFINE);
 
-            Token type_Element = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL);
+            Token type_Element = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.ANY);
 
             bool isArray = ParseArrayType();
 
@@ -653,7 +659,7 @@ namespace Classes.Parser
 
             while (pos < tokens.Length && tokens[pos].type != Type.CLOSE)
             {
-                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.VAR);
+                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.ANY, Type.VAR);
 
                 bool isArray = ParseArrayType();
                 Token name_Param = Use(Type.VAR);
@@ -679,7 +685,7 @@ namespace Classes.Parser
             {
                 Use(Type.RETURN_TYPE);
 
-                Token type = Use(Type.BOOL, Type.STR, Type.CHAR, Type.DECIMAL, Type.NUM, Type.VAR);
+                Token type = Use(Type.BOOL, Type.STR, Type.CHAR, Type.DECIMAL, Type.NUM, Type.ANY, Type.VAR);
 
                 if (type.type == Type.VAR)
                 {
@@ -844,6 +850,12 @@ namespace Classes.Parser
                         continue;
                     }
 
+                    if (typeToken.type == Type.ANY)
+                    {
+                        fields.Add(ParseVariable(Type.ANY, VarType.ANY));
+                        continue;
+                    }
+
                     if (typeToken.type == Type.VAR)
                     {
                         objectFields.Add(ParseObjectVariable());
@@ -878,7 +890,7 @@ namespace Classes.Parser
 
             while (pos < tokens.Length && tokens[pos].type != Type.CLOSE)
             {
-                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.VAR);
+                Token type_Param = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.ANY, Type.VAR);
 
                 bool isArray = ParseArrayType();
                 Token name_Param = Use(Type.VAR);

@@ -1,15 +1,31 @@
 {
   "name": "alana-language",
-  "displayName": "Alana Language",
-  "description": "Syntax highlighting and language support for Alana.",
-  "version": "1.0.0",
+  "displayName": "Alana",
+  "description": "Language support for Alana: highlighting, IntelliSense, diagnostics, outline, and navigation.",
+  "version": "1.2.0",
   "publisher": "alana",
+  "license": "GPL-3.0-only",
+  "homepage": "https://csalana.com",
+  "repository": {
+    "type": "git",
+    "url": "https://csalana.com"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets",
+    "Linters"
   ],
+  "keywords": [
+    "alana",
+    "language"
+  ],
+  "activationEvents": [
+    "onLanguage:alana"
+  ],
+  "main": "./out/extension.js",
   "contributes": {
     "languages": [
       {
@@ -34,6 +50,67 @@
         "scopeName": "source.alana",
         "path": "./syntaxes/alana.tmLanguage.json"
       }
-    ]
+    ],
+    "snippets": [
+      {
+        "language": "alana",
+        "path": "./snippets/alana.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "alana.runFile",
+        "title": "Alana: Run File",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "alana.runFile",
+          "when": "resourceLangId == alana",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "alana.runFile",
+          "when": "resourceLangId == alana",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Alana",
+      "properties": {
+        "alana.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Alana diagnostics (missing semicolons, unmatched end, unknown calls, missing imports)."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[alana]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.wordBasedSuggestions": "off",
+        "editor.quickSuggestions": {
+          "other": true,
+          "comments": false,
+          "strings": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.5.0"
   }
 }

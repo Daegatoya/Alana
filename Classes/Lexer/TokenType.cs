@@ -75,4 +75,5 @@
     NEWOBJ,
     DOT,
     SELF,
+    ANY,
 }

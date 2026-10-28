@@ -1,2 +1,0 @@
-﻿import "importFile.alana"#
-showln call Add(10, 50)#

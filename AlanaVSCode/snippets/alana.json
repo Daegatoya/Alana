@@ -1,0 +1,128 @@
+{
+  "Variable": {
+    "prefix": "define",
+    "body": [
+      "define ${1|num,str,decimal,schar,boolean,any|} ${2:name} is ${3:new};"
+    ],
+    "description": "Define a variable"
+  },
+  "Array": {
+    "prefix": "array",
+    "body": [
+      "define ${1|num,str,decimal,schar,boolean,any|}[] ${2:name} is [${3}];"
+    ],
+    "description": "Define an array"
+  },
+  "Object": {
+    "prefix": "object",
+    "body": [
+      "define ${1:Class} ${2:name} is newobj ${1:Class}($3);"
+    ],
+    "description": "Define a class instance"
+  },
+  "Function": {
+    "prefix": "func",
+    "body": [
+      "define func ${1:name}($2)${3: returning ${4:num}};",
+      "\t$0",
+      "end;"
+    ],
+    "description": "Define a function"
+  },
+  "Class": {
+    "prefix": "class",
+    "body": [
+      "define class ${1:Name};",
+      "public:",
+      "\tdefine constructor($2);",
+      "\t\t$0",
+      "\tend;",
+      "end;"
+    ],
+    "description": "Define a class"
+  },
+  "Constructor": {
+    "prefix": "constructor",
+    "body": [
+      "define constructor($1);",
+      "\t$0",
+      "end;"
+    ],
+    "description": "Define a constructor"
+  },
+  "If": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition};",
+      "\t$0",
+      "end;"
+    ],
+    "description": "If statement"
+  },
+  "If Else": {
+    "prefix": "ifel",
+    "body": [
+      "if ${1:condition};",
+      "\t$2",
+      "else;",
+      "\t$0",
+      "end;"
+    ],
+    "description": "If / else statement"
+  },
+  "While": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition};",
+      "\t$0",
+      "end;"
+    ],
+    "description": "While loop"
+  },
+  "For": {
+    "prefix": "for",
+    "body": [
+      "for (define num ${1:i} is ${2:0}, ${1:i} lessthan ${3:10}, redefine ${1:i} is ${1:i} + 1);",
+      "\t$0",
+      "end;"
+    ],
+    "description": "For loop"
+  },
+  "Forevery": {
+    "prefix": "forevery",
+    "body": [
+      "forevery (define ${1:num} ${2:item} within ${3:array});",
+      "\t$0",
+      "end;"
+    ],
+    "description": "Forevery loop"
+  },
+  "Tryparsenum": {
+    "prefix": "tryparsenum",
+    "body": [
+      "tryparsenum(${1:value}, ${2:target}, ${3:success});"
+    ],
+    "description": "Try parse a value to num"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": [
+      "import \"${1:file.alana}\";"
+    ],
+    "description": "Import an Alana file"
+  },
+  "Showln": {
+    "prefix": "showln",
+    "body": [
+      "showln ${1};"
+    ],
+    "description": "Print a line"
+  },
+  "Call": {
+    "prefix": "call",
+    "body": [
+      "call ${1:name}($2);"
+    ],
+    "description": "Call a function"
+  }
+}

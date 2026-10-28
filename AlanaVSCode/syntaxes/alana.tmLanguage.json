@@ -2,33 +2,20 @@
   "name": "Alana",
   "scopeName": "source.alana",
   "patterns": [
-    {
-      "include": "#comments"
-    },
-    {
-      "include": "#strings"
-    },
-    {
-      "include": "#characters"
-    },
-    {
-      "include": "#numbers"
-    },
-    {
-      "include": "#types"
-    },
-    {
-      "include": "#symbols"
-    },
-    {
-      "include": "#keywords"
-    },
-    {
-      "include": "#constants"
-    },
-    {
-      "include": "#functions"
-    }
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#characters" },
+    { "include": "#numbers" },
+    { "include": "#visibility" },
+    { "include": "#declarations" },
+    { "include": "#natives" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#operators" },
+    { "include": "#builtins" },
+    { "include": "#keywords" },
+    { "include": "#self" },
+    { "include": "#members" }
   ],
   "repository": {
     "comments": {
@@ -39,95 +26,133 @@
         }
       ]
     },
-
-    "symbols": {
-    "patterns": [
-        {
-        "name": "entity.name.function.alana",
-        "match": "(?<=\\bfunc\\s)[A-Za-z_][A-Za-z0-9_]*"
-        },
-        {
-        "name": "entity.name.type.class.alana",
-        "match": "(?<=\\bclass\\s)[A-Za-z_][A-Za-z0-9_]*"
-        },
-        {
-        "name": "entity.name.function.method.alana",
-        "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()"
-        },
-        {
-        "name": "variable.other.member.alana",
-        "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*(?!\\s*\\()"
-        },
-        {
-        "name": "entity.name.type.class.alana",
-        "match": "(?<=\\bnewobj\\s)[A-Za-z_][A-Za-z0-9_]*"
-        },
-        {
-        "name": "entity.name.type.class.alana",
-        "match": "(?<=\\bdefine\\s)[A-Za-z_][A-Za-z0-9_]*(?=\\s+[A-Za-z_][A-Za-z0-9_]*\\s+is)"
-        }
-    ]
-    },
-
     "strings": {
+      "name": "string.quoted.double.alana",
+      "begin": "\"",
+      "end": "\"",
       "patterns": [
         {
-          "name": "string.quoted.double.alana",
-          "begin": "\"",
-          "end": "\""
+          "name": "constant.character.escape.alana",
+          "match": "\\\\\""
         }
       ]
     },
-
     "characters": {
-      "patterns": [
-        {
-          "name": "string.quoted.single.alana",
-          "begin": "'",
-          "end": "'"
-        }
-      ]
+      "name": "string.quoted.single.alana",
+      "begin": "'",
+      "end": "'"
     },
-
     "numbers": {
       "patterns": [
         {
-          "name": "constant.numeric.alana",
-          "match": "\\b\\d+(\\.\\d+)?\\b"
+          "name": "constant.numeric.decimal.alana",
+          "match": "\\b\\d+\\.\\d+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.alana",
+          "match": "\\b\\d+\\b"
         }
       ]
     },
-
+    "visibility": {
+      "patterns": [
+        {
+          "name": "storage.modifier.alana",
+          "match": "^\\s*(public|private)\\s*:"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(define)\\s+(func)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "storage.type.function.alana" },
+            "3": { "name": "entity.name.function.alana" }
+          }
+        },
+        {
+          "match": "\\b(define)\\s+(class)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "storage.type.class.alana" },
+            "3": { "name": "entity.name.type.class.alana" }
+          }
+        },
+        {
+          "match": "\\b(define)\\s+(constructor)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "storage.type.constructor.alana" }
+          }
+        },
+        {
+          "match": "\\b(define)\\s+(num|str|decimal|schar|boolean|any)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "support.type.primitive.alana" }
+          }
+        },
+        {
+          "match": "\\b(define)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+(is)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "entity.name.type.class.alana" },
+            "3": { "name": "variable.other.alana" },
+            "4": { "name": "keyword.operator.assignment.alana" }
+          }
+        },
+        {
+          "match": "\\b(newobj)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.operator.new.alana" },
+            "2": { "name": "entity.name.type.class.alana" }
+          }
+        },
+        {
+          "match": "\\b(call)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": { "name": "keyword.control.alana" },
+            "2": { "name": "entity.name.function.alana" }
+          }
+        },
+        {
+          "match": "\\b(returning)\\s+(num|str|decimal|schar|boolean|any)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "support.type.primitive.alana" }
+          }
+        },
+        {
+          "match": "\\b(returning)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "entity.name.type.class.alana" }
+          }
+        },
+        {
+          "match": "\\b(import)\\s+",
+          "name": "keyword.control.import.alana"
+        }
+      ]
+    },
+    "natives": {
+      "patterns": [
+        {
+          "name": "support.function.native.alana",
+          "match": "\\b__(http_request|http_status|http_body|http_header|http_dispose|json_serialize)\\b"
+        }
+      ]
+    },
     "types": {
-    "patterns": [
+      "patterns": [
         {
-        "name": "support.type.primitive.alana",
-        "match": "\\b(num|str|decimal|char|boolean)\\b"
+          "name": "support.type.primitive.alana",
+          "match": "\\b(num|str|decimal|schar|boolean|any)\\b"
         }
-    ]
+      ]
     },
-
-    "keywords": {
-    "patterns": [
-        {
-        "name": "keyword.control.alana",
-        "match": "\\b(call|return|if|else|elseif|while|for|forevery|break|continue)\\b"
-        },
-        {
-        "name": "storage.modifier.alana",
-        "match": "\\b(public|private)\\b"
-        },
-        {
-        "name": "keyword.declaration.alana",
-        "match": "\\b(define|redefine|returning|import|newobj|new)\\b"
-        },
-        {
-        "name": "variable.language.self.alana",
-        "match": "\\bself\\b"
-        }
-    ]
-    },
-
     "constants": {
       "patterns": [
         {
@@ -136,12 +161,75 @@
         }
       ]
     },
-
-    "functions": {
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.alana",
+          "match": "\\b(times|divide|mod)\\b"
+        },
+        {
+          "name": "keyword.operator.comparison.alana",
+          "match": "\\b(sameas|greaterthan|lessthan|grorsame|leorsame)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.alana",
+          "match": "\\b(and|or|not)\\b"
+        },
+        {
+          "name": "keyword.operator.assignment.alana",
+          "match": "\\bis\\b"
+        },
+        {
+          "name": "keyword.operator.arithmetic.alana",
+          "match": "[+\\-]"
+        }
+      ]
+    },
+    "builtins": {
       "patterns": [
         {
           "name": "support.function.alana",
-          "match": "\\b(show|showln|readln|readk|length|parsenum|parsestr|parsebool|parsechar|parsedec|tryparsenum|tryparsedec|tryparsebool|tryparsechar)\\b"
+          "match": "\\b(showln|show|readln|readk|length|parsenum|parsestr|parseboolean|parseschar|parsedecimal|tryparsenum|tryparsedecimal|tryparseboolean|tryparseschar|push|pop)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.alana",
+          "match": "\\b(if|elseif|else|while|for|forevery|break|continue|return|end|call)\\b"
+        },
+        {
+          "name": "storage.modifier.alana",
+          "match": "\\b(public|private)\\b"
+        },
+        {
+          "name": "keyword.declaration.alana",
+          "match": "\\b(define|redefine|func|class|constructor|returning|newobj|new)\\b"
+        },
+        {
+          "name": "keyword.other.alana",
+          "match": "\\b(with|within|import)\\b"
+        }
+      ]
+    },
+    "self": {
+      "patterns": [
+        {
+          "name": "variable.language.self.alana",
+          "match": "\\bself\\b"
+        }
+      ]
+    },
+    "members": {
+      "patterns": [
+        {
+          "name": "entity.name.function.method.alana",
+          "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*(?=\\s*\\()"
+        },
+        {
+          "name": "variable.other.member.alana",
+          "match": "(?<=\\.)[A-Za-z_][A-Za-z0-9_]*"
         }
       ]
     }

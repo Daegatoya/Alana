@@ -25,6 +25,7 @@ namespace Classes.Lexer
             ["decimal"] = Type.DECIMAL,
             ["schar"] = Type.CHAR,
             ["boolean"] = Type.BOOL,
+            ["any"] = Type.ANY,
             ["sameas"] = Type.EQUAL_EQUAL,
             ["if"] = Type.IF,
             ["not"] = Type.NOT,
@@ -141,9 +142,9 @@ namespace Classes.Lexer
 
                     if (trimmed.Length > 0 && trimmed != "public:" && trimmed != "private:")
                     {
-                        if (currentLine[^1] != '#')
+                        if (currentLine[^1] != ';')
                         {
-                            throw new AlanaError("Expected end of line (#) but couldn't find it", line, currentLine.Length, sources[line - 1]);
+                            throw new AlanaError("Expected end of line (;) but couldn't find it", line, currentLine.Length, sources[line - 1]);
                         }
                     }
                     line++;
@@ -177,7 +178,7 @@ namespace Classes.Lexer
                     }
                 }
 
-                else if(c == '#')
+                else if(c == ';')
                 {
                     tokens.Add(new Token(Type.END, line, col, sources[line - 1]));
                     pos++;
@@ -289,28 +290,59 @@ namespace Classes.Lexer
                 else if (c == '"')
                 {
                     tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
+
                     pos++;
                     col++;
-                    string? word = string.Empty;
-                    int colBeforeLoop = col;
-                    while (pos < source.Length && source[pos] is not '"')
+
+                    string word = string.Empty;
+                    int startLine = line;
+                    int startCol = col;
+
+                    while (pos < source.Length)
                     {
+                        if (source[pos] == '\\' && pos + 1 < source.Length && source[pos + 1] == '"')
+                        {
+                            word += '"';
+
+                            pos += 2;
+                            col += 2;
+
+                            continue;
+                        }
+                        if (source[pos] == '"')
+                        {
+                            break;
+                        }
+                        if (source[pos] == '\n')
+                        {
+                            word += '\n';
+
+                            pos++;
+                            line++;
+                            col = 1;
+
+                            continue;
+                        }
+
                         word += source[pos];
+
                         pos++;
                         col++;
                     }
-                    tokens.Add(new Token(Type.STRING, line, colBeforeLoop, sources[line - 1], word.ToString()));
-                    if (pos < source.Length && source[pos] == '"')
+
+                    if (pos >= source.Length)
                     {
-                        tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
-                        pos++;
-                        col++;
-                        continue;
+                        throw new AlanaError("Unterminated string", startLine, startCol, sources[startLine - 1]);
                     }
-                    else
-                    {
-                        throw new AlanaError($"Expected {Type.OPENCLOSESTR} but received {source[pos]}", line, colBeforeLoop, sources[line - 1]);
-                    }
+
+                    tokens.Add(new Token(Type.STRING, startLine, startCol, sources[startLine - 1], word));
+
+                    tokens.Add(new Token(Type.OPENCLOSESTR, line, col, sources[line - 1]));
+
+                    pos++;
+                    col++;
+
+                    continue;
                 }
 
                 else if (c == '\'')
@@ -342,11 +374,11 @@ namespace Classes.Lexer
                     }
                 }
 
-                else if (char.IsLetter(c))
+                else if (char.IsLetter(c) || c == '_')
                 {
                     string? word = string.Empty;
                     int colBeforeLoop = col;
-                    while (pos < source.Length && char.IsLetterOrDigit(source[pos]))
+                    while (pos < source.Length && char.IsLetterOrDigit(source[pos]) || source[pos] == '_')
                     {
                         word += source[pos];
                         pos++;

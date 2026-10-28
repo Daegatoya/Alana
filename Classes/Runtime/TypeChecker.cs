@@ -28,6 +28,7 @@ namespace Classes.Runtime
                         VarType.CHAR => element is char,
                         VarType.DECIMAL => element is decimal,
                         VarType.BOOL => element is bool,
+                        VarType.ANY => true,
                         _ => false
                     };
 
@@ -47,6 +48,7 @@ namespace Classes.Runtime
                 VarType.CHAR => value is char,
                 VarType.DECIMAL => value is decimal,
                 VarType.BOOL => value is bool,
+                VarType.ANY => true,
                 _ => false
             };
 
