@@ -2,6 +2,8 @@
 <img src="alana.png" alt="Alana Logo" width="500">
 
 > Check out the official [Alana website](https://csalana.com)
+
+> Check out the official [Alana standard library](https://github.com/Daegatoya/AlanaStdLib)
 <hr>
 
 **Introducing Alana**, a programming language I started coding for my portfolio.
