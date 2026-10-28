@@ -2,6 +2,8 @@
 <img src="alana.png" alt="Alana Logo" width="500">
 
 > Check out the official [Alana website](https://csalana.com)
+
+> Check out the official [Alana standard library](https://github.com/Daegatoya/AlanaStdLib)
 <hr>
 
 **Introducing Alana**, a programming language I started coding for my portfolio.
@@ -97,7 +99,7 @@ Good question! Here is a little list showing you all implemented features so far
 
 </details>
 
-### v1.x - v2.0
+## v1.x - v2.0
 
 <details>
     
@@ -146,7 +148,7 @@ So, the syntax goes as follows:
 | `func` | Definition of a function |
 | `end` | Ending a function / if statement |
 | `call` | Calling a function |
-| `#` | Endline character |
+| `;` | Endline character |
 | `return` | Return a value |
 | `new` | Define a new uninitialized variable |
 | `newobj` | Define a new object referencing a class |
@@ -275,22 +277,22 @@ Here are some quick codes in .alana:
 <details>
     
 ```txt
-define num x is 10#
-define num y is 3#
+define num x is 10;
+define num y is 3;
 
-define func sub(num x, num y) returning num#
-  return x - y#
-end#
+define func sub(num x, num y) returning num;
+  return x - y;
+end;
 
-define func add(num x, num y)#
-  return x + y#
-end#
+define func add(num x, num y);
+  return x + y;
+end;
 
-define num z is call sub(x, y)#
-showln z#
+define num z is call sub(x, y);
+showln z;
 
-define num k is call add(x, y)#
-showln k#
+define num k is call add(x, y);
+showln k;
 ```
 
     
@@ -300,30 +302,30 @@ showln k#
 <details>
     
 ```txt
-define str x is "Hello"#
-define schar c is '3'#
-define str y is "World"#
-define boolean zeroOrOne is true#
+define str x is "Hello";
+define schar c is '3';
+define str y is "World";
+define boolean zeroOrOne is true;
 
-define str x2 is new#
-define schar c2 is new#
-define str y2 is new#
-define boolean zeroOrOne2 is new#
+define str x2 is new;
+define schar c2 is new;
+define str y2 is new;
+define boolean zeroOrOne2 is new;
 
-redefine x2 is "Hello"#
-redefine c2 is '3'#
-redefine y2 is "World"#
-redefine zeroOrOne2 is true#
+redefine x2 is "Hello";
+redefine c2 is '3';
+redefine y2 is "World";
+redefine zeroOrOne2 is true;
 
-showln zeroOrOne#
-showln x#
-showln c#
-showln y#
+showln zeroOrOne;
+showln x;
+showln c;
+showln y;
 
-showln zeroOrOne2#
-showln x2#
-showln c2#
-showln y2#
+showln zeroOrOne2;
+showln x2;
+showln c2;
+showln y2;
 ```
 
 </details>
@@ -332,9 +334,9 @@ showln y2#
 <details>
     
 ```txt
-define num x is parsenum(readln)#
-showln x#
-readk#
+define num x is parsenum(readln);
+showln x;
+readk;
 ```
 
 </details>
@@ -343,17 +345,17 @@ readk#
 <details>
     
 ```txt
-define str badParse is "Hello World!"#
-define num goodParse is 23#
-define num parsing is new#
-define boolean success is new#
+define str badParse is "Hello World!";
+define num goodParse is 23;
+define num parsing is new;
+define boolean success is new;
 
-tryparsenum(badParse, parsing, success)#
-showln success#
+tryparsenum(badParse, parsing, success);
+showln success;
 
-tryparsenum(goodParse, parsing, success)#
-showln success#
-showln parsing#
+tryparsenum(goodParse, parsing, success);
+showln success;
+showln parsing;
 ```
 
 </details>
@@ -362,26 +364,26 @@ showln parsing#
 <details>
     
 ```txt
-define num x is 0#
+define num x is 0;
 
-while x lessthan 5#
-    showln x#
-    redefine x is x + 1#
-end#
+while x lessthan 5;
+    showln x;
+    redefine x is x + 1;
+end;
 
-showln#
+showln;
 
-for(define num i is 0, i lessthan 5, redefine i is i + 1)#
-    showln i#
-end#
+for(define num i is 0, i lessthan 5, redefine i is i + 1);
+    showln i;
+end;
 
-showln#
+showln;
 
-define str[] names is ["Ahsoka", "Yoda", "Kenobi"]#
+define str[] names is ["Ahsoka", "Yoda", "Kenobi"];
 
-forevery(define str name within names)#
-    showln name#
-end#
+forevery(define str name within names);
+    showln name;
+end;
 ```
 
 </details>
@@ -391,15 +393,15 @@ end#
 <details>
     
 ```txt
-define num x is 50#
+define num x is 50;
 
-if x sameas 40 or x sameas 30#
-    showln true#
-elseif x greaterthan 60 and x lessthan 70#
-    showln true#
-else#
-    showln false#
-end#
+if x sameas 40 or x sameas 30;
+    showln true;
+elseif x greaterthan 60 and x lessthan 70;
+    showln true;
+else;
+    showln false;
+end;
 ```
 
 </details>
@@ -408,24 +410,24 @@ end#
 <details>
     
 ```txt
-define num x is 50#
-define num y is 60#
+define num x is 50;
+define num y is 60;
 
-if x sameas y#
-    showln x#
-elseif x greaterthan y#
-    showln x#
-elseif x lessthan y#
-    showln x#
-elseif x leorsame y#
-    show x#
-elseif x grorsame y#
-    showln x#
-elseif not x sameas y#
-    showln x#
-else#
-    showln y#
-end#
+if x sameas y;
+    showln x;
+elseif x greaterthan y;
+    showln x;
+elseif x lessthan y;
+    showln x;
+elseif x leorsame y;
+    show x;
+elseif x grorsame y;
+    showln x;
+elseif not x sameas y;
+    showln x;
+else;
+    showln y;
+end;
 ```
 
 </details>
@@ -434,16 +436,16 @@ end#
 <details>
     
 ```txt
-define func compare(num y, decimal z)#
-    if y sameas z#
-        return true#
-    else#
-        return false#
-    end#
-end#
+define func compare(num y, decimal z);
+    if y sameas z;
+        return true;
+    else;
+        return false;
+    end;
+end;
 
-define boolean isTheSame is call compare(50, 50.0)#
-showln isTheSame#
+define boolean isTheSame is call compare(50, 50.0);
+showln isTheSame;
 ```
 
 </details>
@@ -452,34 +454,34 @@ showln isTheSame#
 <details>
     
 ```txt
-define num[] numbers is [10, 20, 30]#
+define num[] numbers is [10, 20, 30];
 
-showln length numbers#
+showln length numbers;
 
-push numbers with 40#
-push numbers with 50#
+push numbers with 40;
+push numbers with 50;
 
-showln length numbers#
-showln numbers[3]#
-showln numbers[4]#
+showln length numbers;
+showln numbers[3];
+showln numbers[4];
 
-pop numbers#
+pop numbers;
 
-showln length numbers#
-showln numbers[3]#
+showln length numbers;
+showln numbers[3];
 
-define func modify(num[] arr)#
-    push arr with 99#
-    showln length arr#
-    showln arr[length arr - 1]#
-    pop arr#
-    showln length arr#
-end#
+define func modify(num[] arr);
+    push arr with 99;
+    showln length arr;
+    showln arr[length arr - 1];
+    pop arr;
+    showln length arr;
+end;
 
-call modify(numbers)#
+call modify(numbers);
 
-showln length numbers#
-showln numbers[3]#
+showln length numbers;
+showln numbers[3];
 ```
 
 </details>
@@ -489,22 +491,22 @@ showln numbers[3]#
 
 **Main.alana**
 ```txt
-import "Addition.alana"#
-showln call Add(10, 50)#
+import "Addition.alana";
+showln call Add(10, 50);
 ```
 
 **Addition.alana**
 ```txt
 private:
-    define num x is new#
-    define num y is new#
+    define num x is new;
+    define num y is new;
 
 public:
-    define func Add(num left, num right)#
-        redefine x is left#
-        redefine y is right#
-        return x + y#
-    end#
+    define func Add(num left, num right);
+        redefine x is left;
+        redefine y is right;
+        return x + y;
+    end;
 ```
 
 </details>
@@ -514,59 +516,59 @@ public:
 
 **Main.alana**
 ```txt
-import "Import.alana"#
+import "Import.alana";
 
-define Person jacob is newobj Person("Jacob", 21)#
-define Person alice is newobj Person("Alice", 30)#
+define Person jacob is newobj Person("Jacob", 21);
+define Person alice is newobj Person("Alice", 30);
 
-call jacob.Birthday()#
-call jacob.Birthday()#
-call alice.Birthday()#
+call jacob.Birthday();
+call jacob.Birthday();
+call alice.Birthday();
 
-showln call jacob.GetName()#
-showln call jacob.GetAge()#
+showln call jacob.GetName();
+showln call jacob.GetAge();
 
-showln call alice.GetName()#
-showln call alice.GetAge()#
+showln call alice.GetName();
+showln call alice.GetAge();
 ```
 
 **Import.alana**
 ```txt
 private:
-define func DefaultName() returning str#
-    return "Unknown"#
-end#
+define func DefaultName() returning str;
+    return "Unknown";
+end;
 
 public:
-define class Person#
+define class Person;
 
 private:
-define str name is call DefaultName()#
-define num age is 0#
+define str name is call DefaultName();
+define num age is 0;
 
-define func FormatName() returning str#
-    return self.name#
-end#
+define func FormatName() returning str;
+    return self.name;
+end;
 
 public:
-define constructor(str name, num age)#
-    redefine self.name is name#
-    redefine self.age is age#
-end#
+define constructor(str name, num age);
+    redefine self.name is name;
+    redefine self.age is age;
+end;
 
-define func GetName() returning str#
-    return call self.FormatName()#
-end#
+define func GetName() returning str;
+    return call self.FormatName();
+end;
 
-define func GetAge() returning num#
-    return self.age#
-end#
+define func GetAge() returning num;
+    return self.age;
+end;
 
-define func Birthday()#
-    redefine self.age is self.age + 1#
-end#
+define func Birthday();
+    redefine self.age is self.age + 1;
+end;
 
-end#
+end;
 ```
 
 </details>
