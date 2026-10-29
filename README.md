@@ -1,4 +1,4 @@
-# Alana v1.4
+# Alana v2.0
 <img src="alana.png" alt="Alana Logo" width="500">
 
 > Check out the official [Alana website](https://csalana.com)
@@ -70,6 +70,7 @@ To use Alana, here are the steps:
 - First, you must download the installer from the **[Alana official website](https://csalana.com)**
 - Then, proceed to the installation.
 - Afterwards, you simply need to create a file with the .alana extension on your computer.
+- You can also run the following command to create a basic main.alana file: `alana start "<path_to_your_folder>"`
 - Once this is done, double click it or open any cmd in the folder where the file is located and enter the following command: `alana <filename>.alana`
 - Your program should run as expected and show you the appropriate errors in case of a syntax misuse.
 
@@ -113,9 +114,27 @@ Good question! Here is a little list showing you all implemented features so far
 - [x] Fields access
 - [x] OOP type system
 - [x] Object reassignment
-- [ ] Inheritance
-- [ ] Override
-- [ ] Runtime polymorphism
+- [x] Inheritance
+- [x] Override
+- [x] Runtime polymorphism
+- [ ] Making you a sandwich (I already said I wouldn't add this feature.)
+
+</details>
+
+## v2.x - v3.0
+
+<details>
+    
+- [ ] Nullable values
+- [ ] Overloading
+- [ ] Default parameters
+- [ ] Enums
+- [ ] Lambda functions
+- [ ] Asynchronous
+- [ ] Mapping
+- [ ] Improved strings
+- [ ] Expended stdlib
+- [ ] Packages ecosystem
 - [ ] Making you a sandwich (I already said I wouldn't add this feature.)
 
 </details>
@@ -129,6 +148,7 @@ In the table below, you can see all **variable types** included in the language:
 | `str` | String | `"Hello"` |
 | `schar` | Single Character | `'A'` |
 | `boolean` | Boolean | `true` |
+| `any` | Any type | `true` - `"Hello` - `23` - ... |
 | `[]` | Array | `[10, 20]` |
 
 So, the syntax goes as follows:
@@ -208,6 +228,7 @@ So, the syntax goes as follows:
 | `leorsame` | Compares if x is less or same as y (<=) |
 | `grorsame` | Compares if x is greater or same as y (>=) |
 | `not` | Inverts the boolean result of an expression (!) |
+| `isa` | Checks whether an object is compatible with a given class |
 
 </details>
 
@@ -253,11 +274,28 @@ So, the syntax goes as follows:
 | Syntax | Description |
 |------|-------------|
 | `import` | Imports the file passed as a string |
+| `including` | Includes a runtime library |
 | `public` | Defines the public fields |
 | `private` | Defines the public fields |
 | `class` | Defines a class |
 | `constructor` | Defines the constructor of a class |
 | `self` | Calls a self field of a class |
+| `extends` | Defines a class inheritance |
+| `parent` | Provides access to the parent class from an inherited class |
+| `override` | Overrides a parent's method |
+| `abstract` | Makes a class or method abstract |
+
+</details>
+
+### Error handling
+<details>
+    
+| Syntax | Description |
+|------|-------------|
+| `try` | Tries to run a code with error handling |
+| `catch` | Catch the errors of a try block |
+| `finally` | Executes a block of code after the associated try, whether or not an exception occurred |
+| `throw` | Throws an error. Using `stdlib/error.alana` is recommended |
 
 </details>
 
@@ -573,11 +611,157 @@ end;
 
 </details>
 
+### *Classes using basic inheritance*
+<details>
+    
+```txt
+define class Animal;
+
+public:
+define str name is new;
+
+define constructor(str name);
+    redefine self.name is name;
+end;
+
+define func GetName() returning str;
+    return self.name;
+end;
+
+end;
+
+
+define class Dog extends Animal;
+
+public:
+define constructor(str name);
+    call parent(name);
+end;
+
+end;
+
+
+define Dog dog is newobj Dog("Rex");
+
+showln call dog.GetName();
+```
+
+</details>
+
+### *Classes using inheritance and keyword `parent`*
+<details>
+
+```txt
+define class Person;
+
+public:
+define str name is new;
+
+define constructor(str name);
+    redefine self.name is name;
+end;
+
+define func Description() returning str;
+    return self.name;
+end;
+
+end;
+
+
+define class Developer extends Person;
+
+public:
+define constructor(str name);
+    call parent(name);
+end;
+
+define override func Description() returning str;
+    return call parent.Description() + " is a developer";
+end;
+
+end;
+
+
+define Developer developer is newobj Developer("Jacob");
+
+showln call developer.Description();
+```
+    
+</details>
+
+### *Inheritance using override*
+<details>
+
+```txt
+define class Animal;
+
+public:
+define func Speak() returning str;
+    return "...";
+end;
+
+end;
+
+
+define class Dog extends Animal;
+
+public:
+define override func Speak() returning str;
+    return "Woof!";
+end;
+
+end;
+
+
+define Dog dog is newobj Dog();
+
+showln call dog.Speak();
+```
+    
+</details>
+
+### *Inheritance using abstract*
+<details>
+
+```txt
+define abstract class Shape;
+
+    public:
+    define abstract func Area() returning decimal;
+
+end;
+
+define class Square extends Shape;
+
+    private:
+    define decimal size is new;
+
+    public:
+    define constructor(decimal size);
+        redefine self.size is size;
+    end;
+
+    define override func Area() returning decimal;
+        return self.size times self.size;
+    end;
+
+end;
+
+
+define Shape shape is newobj Square(4.0);
+
+showln call shape.Area();
+```
+    
+</details>
+
 <hr>
 
 ## So what's next?
 
-I am currently working on making Alana fully OOP, which has already started in v1.1. Stay tuned!
+The Alana is getting to a pretty solid state. To be honest, from now on I will mainly add things to fix or upgrade things that are currently already available. I will also be working on v3.0 and so on.
+
+I will definitely be working a lot on the [Alana Standard Library](https://github.com/Daegatoya/AlanaStdLib).
 
 And, of course, Alana will probably keep evolving as I come up with more ideas.
 
@@ -587,4 +771,4 @@ I hope this little project found your heart, and I will keep you guys updated! T
 
 *And don't forget to ⭐ the repo!*
 
-> Copyright © Daegatoya - 2026 | Alana v1.4
+> Copyright © Daegatoya - 2026 | Alana v2.0
