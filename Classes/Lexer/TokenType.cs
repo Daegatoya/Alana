@@ -1,4 +1,4 @@
-﻿public enum Type
+public enum Type
 {
     NUM,
     DIGIT,
@@ -66,6 +66,7 @@
     WITHIN,
     MODULO,
     IMPORT,
+    INCLUDING,
     PUBLIC,
     PRIVATE,
     TWODOTS,
@@ -76,4 +77,13 @@
     DOT,
     SELF,
     ANY,
+    EXTENDS,
+    OVERRIDE,
+    PARENT,
+    ISA,
+    ABSTRACT,
+    TRY,
+    CATCH,
+    THROW,
+    FINALLY,
 }

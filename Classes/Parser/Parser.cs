@@ -1,4 +1,4 @@
-﻿using Classes.AST;
+using Classes.AST;
 using Classes.AST.Expressions;
 using Classes.AST.Models;
 using Classes.Handler;
@@ -103,6 +103,11 @@ namespace Classes.Parser
                 return ParseShowLn();
             }
 
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.VAR && tokens[pos + 2].type == Type.OPENARRAY)
+            {
+                return ParseObjectVariable();
+            }
+
             else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.VAR && tokens[pos + 2].type == Type.VAR)
             {
                 return ParseObjectVariable();
@@ -158,6 +163,11 @@ namespace Classes.Parser
                 return ParseClass();
             }
 
+            else if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.ABSTRACT && tokens[pos + 2].type == Type.CLASS)
+            {
+                return ParseClass();
+            }
+
             else if (tokens[pos].type == Type.REDEFINE)
             {
                 return ParseRedefine();
@@ -176,6 +186,16 @@ namespace Classes.Parser
             if (tokens[pos].type == Type.IF)
             {
                 return ParseIfStatement();
+            }
+
+            if (tokens[pos].type == Type.TRY)
+            {
+                return ParseTry();
+            }
+
+            if (tokens[pos].type == Type.THROW)
+            {
+                return ParseThrow();
             }
 
             if (tokens[pos].type == Type.READLN || tokens[pos].type == Type.READK)
@@ -211,6 +231,11 @@ namespace Classes.Parser
             if(tokens[pos].type == Type.IMPORT)
             {
                 return ParseImport();
+            }
+
+            if (tokens[pos].type == Type.INCLUDING)
+            {
+                return ParseIncluding();
             }
 
             if (tokens[pos].type == Type.PUBLIC)
@@ -451,6 +476,91 @@ namespace Classes.Parser
             visibility = previous;
             return new IfStatement(condition, body, elseBody, elseIfStatements);
         }
+
+        public TryStatement ParseTry()
+        {
+            Visibility previous = visibility;
+            List<Statement> body = new();
+            string? catchName = null;
+            List<Statement>? catchBody = null;
+            List<Statement>? finallyBody = null;
+
+            Use(Type.TRY);
+            Use(Type.END);
+
+            while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+            {
+                Statement? statement = ParseStatement();
+                if (statement is not null)
+                {
+                    body.Add(statement);
+                }
+            }
+
+            Use(Type.EXITFUNC);
+            Use(Type.END);
+
+            if (pos < tokens.Length && tokens[pos].type == Type.CATCH)
+            {
+                Use(Type.CATCH);
+                Use(Type.OPEN);
+                Token name = Use(Type.VAR);
+                Use(Type.CLOSE);
+                Use(Type.END);
+
+                catchName = name.value!;
+                catchBody = new();
+
+                while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+                {
+                    Statement? statement = ParseStatement();
+                    if (statement is not null)
+                    {
+                        catchBody.Add(statement);
+                    }
+                }
+
+                Use(Type.EXITFUNC);
+                Use(Type.END);
+            }
+
+            if (pos < tokens.Length && tokens[pos].type == Type.FINALLY)
+            {
+                Use(Type.FINALLY);
+                Use(Type.END);
+
+                finallyBody = new();
+
+                while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
+                {
+                    Statement? statement = ParseStatement();
+                    if (statement is not null)
+                    {
+                        finallyBody.Add(statement);
+                    }
+                }
+
+                Use(Type.EXITFUNC);
+                Use(Type.END);
+            }
+
+            if (catchBody == null && finallyBody == null)
+            {
+                Token token = tokens[pos > 0 ? pos - 1 : pos];
+                throw new AlanaError("try must have a catch or a finally", token.line, token.col, token.source!);
+            }
+
+            visibility = previous;
+            return new TryStatement(body, catchName, catchBody, finallyBody);
+        }
+
+        public ThrowStatement ParseThrow()
+        {
+            Use(Type.THROW);
+            Expression expression = ParseExpression();
+            Use(Type.END);
+            return new ThrowStatement(expression);
+        }
         #endregion
 
         #region Loops Parsers
@@ -516,13 +626,23 @@ namespace Classes.Parser
             Use(Type.OPEN);
             Use(Type.DEFINE);
 
-            Token type_Element = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.ANY);
+            Token type_Element = Use(Type.STR, Type.NUM, Type.DECIMAL, Type.CHAR, Type.BOOL, Type.ANY, Type.VAR);
 
             bool isArray = ParseArrayType();
 
             Token name = Use(Type.VAR);
 
-            VarType type_Parsed = ParseVarType(type_Element, $"the forevery variable {name.value}");
+            VarType type_Parsed = VarType.ANY;
+            string? className = null;
+
+            if (type_Element.type == Type.VAR)
+            {
+                className = type_Element.value!;
+            }
+            else
+            {
+                type_Parsed = ParseVarType(type_Element, $"the forevery variable {name.value}");
+            }
 
             Use(Type.WITHIN);
 
@@ -546,7 +666,7 @@ namespace Classes.Parser
 
             visibility = previous;
 
-            return new ForEveryStatement(name.value!, type_Parsed, isArray, target, body);
+            return new ForEveryStatement(name.value!, type_Parsed, isArray, target, body, className);
         }
         #endregion
 
@@ -555,7 +675,30 @@ namespace Classes.Parser
         public Expression ParseCall()
         {
             Token callToken = Use(Type.CALL);
-            Token first = Use(Type.VAR, Type.SELF);
+            Token first = Use(Type.VAR, Type.SELF, Type.PARENT);
+
+            if (first.type == Type.PARENT && tokens[pos].type == Type.OPEN)
+            {
+                Use(Type.OPEN);
+
+                List<Expression> parentArguments = new();
+
+                while (tokens[pos].type != Type.CLOSE)
+                {
+                    parentArguments.Add(ParseExpression());
+
+                    if (tokens[pos].type != Type.CLOSE)
+                    {
+                        Use(Type.COMA);
+                    }
+                }
+
+                Use(Type.CLOSE);
+
+                ParentConstructorCall parentCall = new ParentConstructorCall(parentArguments);
+                SetPos(parentCall, callToken);
+                return parentCall;
+            }
 
             if (first.type == Type.VAR && tokens[pos].type == Type.OPEN)
             {
@@ -586,6 +729,10 @@ namespace Classes.Parser
             {
                 target = new VarExpression("self");
             }
+            else if (first.type == Type.PARENT)
+            {
+                target = new VarExpression("parent");
+            }
             else
             {
                 target = new VarExpression(first.value!);
@@ -593,8 +740,24 @@ namespace Classes.Parser
 
             SetPos(target, first);
 
-            while (tokens[pos].type == Type.DOT)
+            while (pos < tokens.Length)
             {
+                if (tokens[pos].type == Type.OPENARRAY)
+                {
+                    Token open = Use(Type.OPENARRAY);
+                    Expression index = ParseExpression();
+                    Use(Type.CLOSEARRAY);
+                    ArrayAccessExpression access = new ArrayAccessExpression(target, index);
+                    SetPos(access, open);
+                    target = access;
+                    continue;
+                }
+
+                if (tokens[pos].type != Type.DOT)
+                {
+                    break;
+                }
+
                 Token dot = Use(Type.DOT);
                 Token member = Use(Type.VAR);
 
@@ -651,6 +814,21 @@ namespace Classes.Parser
             bool returnIsArray = false;
 
             Use(Type.DEFINE);
+
+            bool isOverride = false;
+            bool isAbstract = false;
+
+            if (tokens[pos].type == Type.OVERRIDE)
+            {
+                Use(Type.OVERRIDE);
+                isOverride = true;
+            }
+            else if (tokens[pos].type == Type.ABSTRACT)
+            {
+                Use(Type.ABSTRACT);
+                isAbstract = true;
+            }
+
             Use(Type.DEFFUNC);
 
             Token name = Use(Type.VAR);
@@ -690,6 +868,7 @@ namespace Classes.Parser
                 if (type.type == Type.VAR)
                 {
                     returnClassName = type.value!;
+                    returnIsArray = ParseArrayType();
                 }
                 else
                 {
@@ -698,6 +877,12 @@ namespace Classes.Parser
                 }
             }
             Use(Type.END);
+
+            if (isAbstract)
+            {
+                visibility = previous;
+                return new DefFunction(functionVisibility, name.value!, @params, body, returnType, returnClassName, returnIsArray, isOverride, isAbstract);
+            }
 
             while (pos < tokens.Length && tokens[pos].type != Type.EXITFUNC)
             {
@@ -712,7 +897,7 @@ namespace Classes.Parser
             Use(Type.END);
 
             visibility = previous;
-            return new DefFunction(functionVisibility, name.value!, @params, body, returnType, returnClassName, returnIsArray);
+            return new DefFunction(functionVisibility, name.value!, @params, body, returnType, returnClassName, returnIsArray, isOverride, isAbstract);
         }
         #endregion
 
@@ -723,6 +908,7 @@ namespace Classes.Parser
             Use(Type.DEFINE);
 
             Token className = Use(Type.VAR);
+            bool isArray = ParseArrayType();
             Token variableName = Use(Type.VAR);
 
             Use(Type.EQUAL);
@@ -731,7 +917,7 @@ namespace Classes.Parser
 
             Use(Type.END);
 
-            return new DefineObject(visibility, className.value!, variableName.value!, value);
+            return new DefineObject(visibility, className.value!, variableName.value!, value, isArray);
         }
 
         private NewObject ParseNewObject()
@@ -774,9 +960,28 @@ namespace Classes.Parser
             DefConstructor? constructor = null;
 
             Use(Type.DEFINE);
+
+            bool isAbstract = false;
+
+            if (tokens[pos].type == Type.ABSTRACT)
+            {
+                Use(Type.ABSTRACT);
+                isAbstract = true;
+            }
+
             Use(Type.CLASS);
 
             Token name = Use(Type.VAR);
+
+            string? parentName = null;
+
+            if (tokens[pos].type == Type.EXTENDS)
+            {
+                Use(Type.EXTENDS);
+                Token parent = Use(Type.VAR);
+                parentName = parent.value!;
+            }
+
             Use(Type.END);
 
             visibility = Visibility.PRIVATE;
@@ -800,6 +1005,18 @@ namespace Classes.Parser
                 }
 
                 if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.DEFFUNC)
+                {
+                    methods.Add(ParseFunction());
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.OVERRIDE)
+                {
+                    methods.Add(ParseFunction());
+                    continue;
+                }
+
+                if (tokens[pos].type == Type.DEFINE && tokens[pos + 1].type == Type.ABSTRACT && tokens[pos + 2].type == Type.DEFFUNC)
                 {
                     methods.Add(ParseFunction());
                     continue;
@@ -872,7 +1089,7 @@ namespace Classes.Parser
             Use(Type.END);
 
             visibility = previous;
-            return new DefClass(classVisibility, name.value!, fields, objectFields, methods, constructor);
+            return new DefClass(classVisibility, name.value!, fields, objectFields, methods, constructor, parentName, isAbstract);
         }
 
         public DefConstructor ParseConstructor()
@@ -1029,6 +1246,17 @@ namespace Classes.Parser
             Use(Type.END);
 
             return new ImportStatement(file.value!);
+        }
+
+        private IncludingStatement ParseIncluding()
+        {
+            Use(Type.INCLUDING);
+            Use(Type.OPENCLOSESTR);
+            Token file = Use(Type.STRING);
+            Use(Type.OPENCLOSESTR);
+            Use(Type.END);
+
+            return new IncludingStatement(file.value!);
         }
 
         #endregion
@@ -1202,6 +1430,14 @@ namespace Classes.Parser
                 Token opToken = tokens[pos];
                 Type operation = opToken.type;
                 Use(operation);
+
+                if (operation == Type.ISA)
+                {
+                    Token className = Use(Type.VAR);
+                    left = new IsAExpression(left, className.value!);
+                    SetPos(left, opToken);
+                    continue;
+                }
 
                 Expression right = ParseValue();
 

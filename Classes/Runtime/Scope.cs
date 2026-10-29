@@ -1,3 +1,4 @@
+using Classes.AST;
 using Classes.Handler;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace Classes.Runtime
         private Interpreter runtime;
 
         public ClassInstance? currentInstance;
+        public DefClass? currentClass;
 
         public Scope(Interpreter runtime, Scope? parent = null)
         {
@@ -28,6 +30,7 @@ namespace Classes.Runtime
             Scope child = new Scope(runtime, this);
 
             child.currentInstance = currentInstance;
+            child.currentClass = currentClass;
 
             return child;
         }
@@ -87,14 +90,9 @@ namespace Classes.Runtime
             }
         }
 
-        public void DefineObject(string name, ClassInstance instance, Visibility visibility, string? ownermodule)
+        public void DefineObject(string name, ClassInstance instance, Visibility visibility, string? ownermodule, string className)
         {
-            string key = name;
-
-            if (visibility == Visibility.PRIVATE && ownermodule != null)
-            {
-                key = ownermodule + "::" + name;
-            }
+            string key = ObjectKey(name, visibility, ownermodule);
 
             if (objects.ContainsKey(key))
             {
@@ -106,7 +104,51 @@ namespace Classes.Runtime
                 throw runtime.Error($"A variable named {name} is already defined");
             }
 
-            objects.Add(key, new RunTimeObject(instance, visibility, ownermodule));
+            objects.Add(key, new RunTimeObject(instance, visibility, ownermodule, className));
+        }
+
+        public void DefineObjectArray(string name, List<object> array, Visibility visibility, string? ownermodule, string className)
+        {
+            string key = ObjectKey(name, visibility, ownermodule);
+
+            if (objects.ContainsKey(key))
+            {
+                throw runtime.Error($"Object {name} is already defined");
+            }
+
+            if (variables.ContainsKey(key))
+            {
+                throw runtime.Error($"A variable named {name} is already defined");
+            }
+
+            objects.Add(key, new RunTimeObject(array, visibility, ownermodule, className));
+        }
+
+        public void DefineObjectUninitialized(string name, Visibility visibility, string? ownermodule, string className, bool isArray)
+        {
+            string key = ObjectKey(name, visibility, ownermodule);
+
+            if (objects.ContainsKey(key))
+            {
+                throw runtime.Error($"Object {name} is already defined");
+            }
+
+            if (variables.ContainsKey(key))
+            {
+                throw runtime.Error($"A variable named {name} is already defined");
+            }
+
+            objects.Add(key, new RunTimeObject(visibility, ownermodule, className, isArray));
+        }
+
+        private string ObjectKey(string name, Visibility visibility, string? ownermodule)
+        {
+            if (visibility == Visibility.PRIVATE && ownermodule != null)
+            {
+                return ownermodule + "::" + name;
+            }
+
+            return name;
         }
 
         public RunTimeVariable? Find(string name)
@@ -136,6 +178,18 @@ namespace Classes.Runtime
 
         public ClassInstance? FindObject(string name)
         {
+            RunTimeObject? binding = FindObjectBinding(name);
+
+            if (binding == null || binding.isArray)
+            {
+                return null;
+            }
+
+            return binding.instance;
+        }
+
+        public RunTimeObject? FindObjectBinding(string name)
+        {
             string current = runtime.moduleLoader.CurrentFile;
             string privateKey = current + "::" + name;
 
@@ -145,12 +199,12 @@ namespace Classes.Runtime
             {
                 if (scope.objects.TryGetValue(privateKey, out RunTimeObject? privateObject))
                 {
-                    return privateObject.instance;
+                    return privateObject;
                 }
 
                 if (scope.objects.TryGetValue(name, out RunTimeObject? publicObject))
                 {
-                    return publicObject.instance;
+                    return publicObject;
                 }
 
                 scope = scope.parent;
@@ -183,37 +237,62 @@ namespace Classes.Runtime
 
         public void SetObjectLocal(string name, ClassInstance instance)
         {
-            string current = runtime.moduleLoader.CurrentFile;
-            string privateKey = current + "::" + name;
+            RunTimeObject binding = GetObjectBindingLocal(name);
 
-            if (objects.TryGetValue(privateKey, out RunTimeObject? privateObject))
-            {
-                privateObject.instance = instance;
-                return;
-            }
+            binding.instance = instance;
+            binding.isInitialized = true;
+        }
 
-            if (objects.TryGetValue(name, out RunTimeObject? publicObject))
-            {
-                publicObject.instance = instance;
-                return;
-            }
+        public void SetObjectArrayLocal(string name, List<object> array)
+        {
+            RunTimeObject binding = GetObjectBindingLocal(name);
 
-            throw runtime.Error($"Object field {name} can't be found");
+            binding.array = array;
+            binding.isInitialized = true;
         }
 
         public ClassInstance GetObjectLocal(string name)
+        {
+            RunTimeObject binding = GetObjectBindingLocal(name);
+
+            if (binding.instance == null)
+            {
+                throw runtime.Error($"Object field {name} is not initialized");
+            }
+
+            return binding.instance;
+        }
+
+        public object GetObjectValueLocal(string name)
+        {
+            RunTimeObject binding = GetObjectBindingLocal(name);
+
+            if (!binding.isInitialized)
+            {
+                throw runtime.Error($"Object field {name} is not initialized");
+            }
+
+            if (binding.isArray)
+            {
+                return binding.array!;
+            }
+
+            return binding.instance!;
+        }
+
+        public RunTimeObject GetObjectBindingLocal(string name)
         {
             string current = runtime.moduleLoader.CurrentFile;
             string privateKey = current + "::" + name;
 
             if (objects.TryGetValue(privateKey, out RunTimeObject? privateObject))
             {
-                return privateObject.instance;
+                return privateObject;
             }
 
             if (objects.TryGetValue(name, out RunTimeObject? publicObject))
             {
-                return publicObject.instance;
+                return publicObject;
             }
 
             throw runtime.Error($"Object field {name} can't be found");

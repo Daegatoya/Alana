@@ -73,11 +73,23 @@
           }
         },
         {
-          "match": "\\b(define)\\s+(class)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(define)\\s+(abstract)?\\s*(class)\\s+([A-Za-z_][A-Za-z0-9_]*)(?:\\s+(extends)\\s+([A-Za-z_][A-Za-z0-9_]*))?",
           "captures": {
             "1": { "name": "keyword.declaration.alana" },
-            "2": { "name": "storage.type.class.alana" },
-            "3": { "name": "entity.name.type.class.alana" }
+            "2": { "name": "storage.modifier.alana" },
+            "3": { "name": "storage.type.class.alana" },
+            "4": { "name": "entity.name.type.class.alana" },
+            "5": { "name": "storage.modifier.alana" },
+            "6": { "name": "entity.name.type.class.alana" }
+          }
+        },
+        {
+          "match": "\\b(define)\\s+(override|abstract)\\s+(func)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.declaration.alana" },
+            "2": { "name": "storage.modifier.alana" },
+            "3": { "name": "storage.type.function.alana" },
+            "4": { "name": "entity.name.function.alana" }
           }
         },
         {
@@ -132,7 +144,7 @@
           }
         },
         {
-          "match": "\\b(import)\\s+",
+          "match": "\\b(import|including)\\s+",
           "name": "keyword.control.import.alana"
         }
       ]
@@ -141,7 +153,7 @@
       "patterns": [
         {
           "name": "support.function.native.alana",
-          "match": "\\b__(http_request|http_status|http_body|http_header|http_dispose|json_serialize)\\b"
+          "match": "\\b__(http_request|http_status|http_body|http_header|http_dispose|json_serialize|error_message|error_line|error_col|error_source)\\b"
         }
       ]
     },
@@ -169,7 +181,7 @@
         },
         {
           "name": "keyword.operator.comparison.alana",
-          "match": "\\b(sameas|greaterthan|lessthan|grorsame|leorsame)\\b"
+          "match": "\\b(sameas|greaterthan|lessthan|grorsame|leorsame|isa)\\b"
         },
         {
           "name": "keyword.operator.logical.alana",
@@ -197,7 +209,7 @@
       "patterns": [
         {
           "name": "keyword.control.alana",
-          "match": "\\b(if|elseif|else|while|for|forevery|break|continue|return|end|call)\\b"
+          "match": "\\b(if|elseif|else|while|for|forevery|break|continue|return|end|call|try|catch|throw|finally)\\b"
         },
         {
           "name": "storage.modifier.alana",
@@ -205,11 +217,11 @@
         },
         {
           "name": "keyword.declaration.alana",
-          "match": "\\b(define|redefine|func|class|constructor|returning|newobj|new)\\b"
+          "match": "\\b(define|redefine|func|class|constructor|returning|newobj|new|extends|override|abstract)\\b"
         },
         {
           "name": "keyword.other.alana",
-          "match": "\\b(with|within|import)\\b"
+          "match": "\\b(with|within|import|including)\\b"
         }
       ]
     },
@@ -217,7 +229,7 @@
       "patterns": [
         {
           "name": "variable.language.self.alana",
-          "match": "\\bself\\b"
+          "match": "\\b(self|parent)\\b"
         }
       ]
     },

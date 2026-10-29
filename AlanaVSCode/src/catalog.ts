@@ -12,6 +12,7 @@ export const KEYWORDS: Record<string, string> = {
   returning: "Declares the return type of a function: returning num, returning Person, returning any[].",
   call: "Calls a function or method: call add(1, 2); or call person.GetName();",
   import: "Imports another .alana file relative to the current file.",
+  including: "Loads a file from the Alana install folder: including \"stdlib/http.alana\";",
   public: "Starts a public: visibility section for functions, classes, and members.",
   private: "Starts a private: visibility section. Private names are only visible in their own module.",
   new: "Marks a variable as declared but not initialized.",
@@ -60,6 +61,15 @@ export const KEYWORDS: Record<string, string> = {
   schar: "Single character type. Written 'A'.",
   boolean: "Boolean type. Written true or false.",
   any: "Holds any Alana value: primitives, arrays, or class instances. Like object in C#.",
+  extends: "Inherits from a parent class: define class Square extends Shape;",
+  override: "Replaces a parent method with the same signature: define override func Area() returning decimal;",
+  parent: "Calls the parent constructor or a parent method: call parent(args); or call parent.Area();",
+  isa: "True if an object is an instance of a class or one of its children: shape isa Square.",
+  abstract: "Declares a class or method that must be overridden before it can be created.",
+  try: "Starts an error-handling block. Must be followed by catch and/or finally, each closed with end;",
+  catch: "Handles an error. catch(error); binds the message as str.",
+  throw: "Throws an error. throw \"message\"; or throw newobj Error(error);",
+  finally: "Runs after try/catch, whether an error occurred or not.",
 };
 
 export const OPERATORS = [
@@ -74,6 +84,7 @@ export const OPERATORS = [
   "and",
   "or",
   "not",
+  "isa",
 ];
 
 export interface SignatureInfo {
@@ -220,6 +231,34 @@ export const BUILTIN_SIGNATURES: Record<string, SignatureInfo[]> = {
       parameters: [{ label: "value", documentation: "Any serializable value." }],
     },
   ],
+  __error_message: [
+    {
+      label: "__error_message()",
+      documentation: "Message of the error currently handled by catch, or an empty str.",
+      parameters: [],
+    },
+  ],
+  __error_line: [
+    {
+      label: "__error_line()",
+      documentation: "Line of the error currently handled by catch.",
+      parameters: [],
+    },
+  ],
+  __error_col: [
+    {
+      label: "__error_col()",
+      documentation: "Column of the error currently handled by catch.",
+      parameters: [],
+    },
+  ],
+  __error_source: [
+    {
+      label: "__error_source()",
+      documentation: "Source line of the error currently handled by catch.",
+      parameters: [],
+    },
+  ],
 };
 
 export const NATIVES = [
@@ -229,6 +268,10 @@ export const NATIVES = [
   "__http_header",
   "__http_dispose",
   "__json_serialize",
+  "__error_message",
+  "__error_line",
+  "__error_col",
+  "__error_source",
 ];
 
 export const NATIVE_DOCS: Record<string, string> = {
@@ -238,6 +281,10 @@ export const NATIVE_DOCS: Record<string, string> = {
   __http_header: "Native. Returns an HTTP header as str, or \"\" if it is missing.",
   __http_dispose: "Native. Releases an HTTP response handle.",
   __json_serialize: "Native. Serializes a value to a JSON str. Public fields of class instances are included.",
+  __error_message: "Native. Message of the error currently handled by catch, or an empty str.",
+  __error_line: "Native. Line of the error currently handled by catch, or the current line.",
+  __error_col: "Native. Column of the error currently handled by catch, or the current column.",
+  __error_source: "Native. Source line of the error currently handled by catch.",
 };
 
 export const KEYWORD_LIST = Object.keys(KEYWORDS);

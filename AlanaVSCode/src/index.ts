@@ -66,6 +66,9 @@ export class AlanaIndex {
         return;
       }
       for (const imp of current.imports) {
+        if (imp.kind === "including") {
+          continue;
+        }
         const target = this.resolveImport(uri, imp.path);
         if (!target) {
           continue;
@@ -155,6 +158,9 @@ export class AlanaIndex {
         return undefined;
       }
       for (const imp of current.imports) {
+        if (imp.kind === "including") {
+          continue;
+        }
         const target = this.resolveImport(uri, imp.path);
         if (!target) {
           continue;

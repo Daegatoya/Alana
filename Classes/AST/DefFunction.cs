@@ -1,4 +1,4 @@
-﻿using Classes.AST.Models;
+using Classes.AST.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,8 +17,10 @@ namespace Classes.AST
         public VarType? return_type;
         public string? returnClassName;
         public bool returnIsArray;
+        public bool isOverride;
+        public bool isAbstract;
 
-        public DefFunction(Visibility? visibility, string name, List<Param>? parameters = null, List<Statement>? body = null, VarType? return_type = null, string? returnClassName = null, bool returnIsArray = false)
+        public DefFunction(Visibility? visibility, string name, List<Param>? parameters = null, List<Statement>? body = null, VarType? return_type = null, string? returnClassName = null, bool returnIsArray = false, bool isOverride = false, bool isAbstract = false)
         {
             this.name = name;
             this.parameters = parameters;
@@ -27,6 +29,8 @@ namespace Classes.AST
             this.return_type = return_type;
             this.returnClassName = returnClassName;
             this.returnIsArray = returnIsArray;
+            this.isOverride = isOverride;
+            this.isAbstract = isAbstract;
         }
     }
 }

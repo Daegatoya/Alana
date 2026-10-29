@@ -64,6 +64,7 @@ export type TokenKind =
   | "WITHIN"
   | "MODULO"
   | "IMPORT"
+  | "INCLUDING"
   | "PUBLIC"
   | "PRIVATE"
   | "TWODOTS"
@@ -73,7 +74,16 @@ export type TokenKind =
   | "NEWOBJ"
   | "DOT"
   | "SELF"
-  | "ANY";
+  | "ANY"
+  | "EXTENDS"
+  | "OVERRIDE"
+  | "PARENT"
+  | "ISA"
+  | "ABSTRACT"
+  | "TRY"
+  | "CATCH"
+  | "THROW"
+  | "FINALLY";
 
 export interface Token {
   kind: TokenKind;
@@ -143,6 +153,7 @@ const KEYWORDS = {
   within: "WITHIN",
   mod: "MODULO",
   import: "IMPORT",
+  including: "INCLUDING",
   public: "PUBLIC",
   private: "PRIVATE",
   returning: "RETURN_TYPE",
@@ -150,6 +161,15 @@ const KEYWORDS = {
   ["constructor"]: "CONSTRUCTOR",
   newobj: "NEWOBJ",
   self: "SELF",
+  extends: "EXTENDS",
+  override: "OVERRIDE",
+  parent: "PARENT",
+  isa: "ISA",
+  abstract: "ABSTRACT",
+  try: "TRY",
+  catch: "CATCH",
+  throw: "THROW",
+  finally: "FINALLY",
 } as Record<string, TokenKind>;
 
 function isDigit(c: string): boolean {

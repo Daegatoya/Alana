@@ -18,12 +18,26 @@ namespace Alana
                 if (args.Length == 0)
                 {
                     Console.WriteLine("Usage: alana <file.alana>");
+                    Console.WriteLine("       alana start <path>");
+                    Console.WriteLine("       alana --version");
                     return;
                 }
 
                 if (args[0] == "--version")
                 {
-                    Console.WriteLine("Alana 1.4");
+                    Console.WriteLine("Alana 2.0");
+                    return;
+                }
+
+                if (args[0] == "start")
+                {
+                    if (args.Length < 2)
+                    {
+                        Console.WriteLine("Usage: alana start <path>");
+                        return;
+                    }
+
+                    StartProject(args[1]);
                     return;
                 }
 
@@ -53,6 +67,37 @@ namespace Alana
             {
                 Console.WriteLine($"Alana error: {ex.Message}");
             }
+        }
+
+        private static void StartProject(string path)
+        {
+            string target;
+
+            if (path.EndsWith(".alana", StringComparison.OrdinalIgnoreCase))
+            {
+                target = Path.GetFullPath(path);
+                string? directory = Path.GetDirectoryName(target);
+
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+            }
+            else
+            {
+                string directory = Path.GetFullPath(path);
+                Directory.CreateDirectory(directory);
+                target = Path.Combine(directory, "main.alana");
+            }
+
+            if (File.Exists(target))
+            {
+                Console.WriteLine($"Alana error: file '{target}' already exists.");
+                return;
+            }
+
+            File.WriteAllText(target, "including \"stdlib/error.alana\";\n\nshowln \"Hello, Alana\";\n");
+            Console.WriteLine($"Created {target}");
         }
     }
 }

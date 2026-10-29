@@ -111,6 +111,13 @@
     ],
     "description": "Import an Alana file"
   },
+  "Including": {
+    "prefix": "including",
+    "body": [
+      "including \"stdlib/${1:http.alana}\";"
+    ],
+    "description": "Include a file from the Alana install folder"
+  },
   "Showln": {
     "prefix": "showln",
     "body": [
@@ -124,5 +131,24 @@
       "call ${1:name}($2);"
     ],
     "description": "Call a function"
+  },
+  "Try Catch": {
+    "prefix": "try",
+    "body": [
+      "try;",
+      "\t$0",
+      "end;",
+      "catch(${1:error});",
+      "\t",
+      "end;"
+    ],
+    "description": "Try / catch"
+  },
+  "Throw": {
+    "prefix": "throw",
+    "body": [
+      "throw ${1:\"message\"};"
+    ],
+    "description": "Throw an error"
   }
 }

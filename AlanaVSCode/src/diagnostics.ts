@@ -35,6 +35,9 @@ export function refreshDiagnostics(
   }
 
   for (const imp of analysis.imports) {
+    if (imp.kind === "including") {
+      continue;
+    }
     if (!index.resolveImport(document.uri, imp.path)) {
       const line = Math.max(0, imp.line - 1);
       const col = Math.max(0, imp.col - 1);

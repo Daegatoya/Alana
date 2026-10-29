@@ -2,7 +2,7 @@
   "name": "alana-language",
   "displayName": "Alana",
   "description": "Language support for Alana: highlighting, IntelliSense, diagnostics, outline, and navigation.",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "publisher": "alana",
   "license": "GPL-3.0-only",
   "homepage": "https://csalana.com",

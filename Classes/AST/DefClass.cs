@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,8 +15,10 @@ namespace Classes.AST
         public List<DefineObject> objectFields;
         public List<DefFunction> methods;
         public DefConstructor? constructor;
+        public string? parentName;
+        public bool isAbstract;
 
-        public DefClass(Visibility visibility, string name, List<DefineVar> fields, List<DefineObject> objectFields, List<DefFunction> methods, DefConstructor? constructor)
+        public DefClass(Visibility visibility, string name, List<DefineVar> fields, List<DefineObject> objectFields, List<DefFunction> methods, DefConstructor? constructor, string? parentName = null, bool isAbstract = false)
         {
             this.visibility = visibility;
             this.name = name;
@@ -24,6 +26,8 @@ namespace Classes.AST
             this.objectFields = objectFields;
             this.methods = methods;
             this.constructor = constructor;
+            this.parentName = parentName;
+            this.isAbstract = isAbstract;
         }
     }
 }

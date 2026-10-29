@@ -1,4 +1,4 @@
-﻿using Classes.AST;
+using Classes.AST;
 using Classes.AST.Expressions;
 using Classes.AST.Models;
 using Classes.Handler;
@@ -22,6 +22,7 @@ namespace Classes.Runtime
 
         internal int line, col;
         internal string source = string.Empty;
+        internal AlanaError? lastCaught;
 
         public Interpreter(string entryFile)
         {
@@ -35,6 +36,77 @@ namespace Classes.Runtime
         internal AlanaError Error(string message)
         {
             return new AlanaError(message, line, col, source);
+        }
+
+        internal AlanaError UserThrow(object value)
+        {
+            return new AlanaError(MessageFromThrown(value), line, col, source);
+        }
+
+        internal object CaughtOrCurrent(string kind)
+        {
+            if (lastCaught != null)
+            {
+                if (kind == "message")
+                {
+                    return lastCaught.Message;
+                }
+
+                if (kind == "line")
+                {
+                    return lastCaught.line;
+                }
+
+                if (kind == "col")
+                {
+                    return lastCaught.col;
+                }
+
+                return lastCaught.source;
+            }
+
+            if (kind == "message")
+            {
+                return "";
+            }
+
+            if (kind == "line")
+            {
+                return line;
+            }
+
+            if (kind == "col")
+            {
+                return col;
+            }
+
+            return source;
+        }
+
+        internal string MessageFromThrown(object value)
+        {
+            if (value is string message)
+            {
+                return message;
+            }
+
+            if (value is ClassInstance instance)
+            {
+                if (TryFindPrimitiveField(instance.definition, "message", out DefineVar field, out DefClass owner))
+                {
+                    if (field.type == VarType.STR && !field.isArray)
+                    {
+                        RunTimeVariable stored = instance.fields.GetLocal("message");
+
+                        if (stored.isInitialized && stored.value is string fieldMessage)
+                        {
+                            return fieldMessage;
+                        }
+                    }
+                }
+            }
+
+            return value.ToString()!;
         }
 
         internal void SetPos(int line, int col, string? source)
@@ -79,15 +151,220 @@ namespace Classes.Runtime
             throw Error($"Unknown class {name}");
         }
 
-        private void InvokeConstructor(ClassInstance instance, DefConstructor constructor, List<Expression> arguments, Scope callerScope)
+        internal bool IsSubclassOrSame(string actualName, string expectedName)
+        {
+            DefClass current = ResolveClass(actualName);
+
+            while (true)
+            {
+                if (current.name == expectedName)
+                {
+                    return true;
+                }
+
+                if (current.parentName == null)
+                {
+                    return false;
+                }
+
+                current = ResolveClass(current.parentName);
+            }
+        }
+
+        internal void CheckObject(object value, string className, bool isArray)
+        {
+            if (isArray)
+            {
+                if (value is not List<object> values)
+                {
+                    throw Error($"Type error: expected an array of {className}");
+                }
+
+                foreach (object element in values)
+                {
+                    CheckObject(element, className, false);
+                }
+
+                return;
+            }
+
+            if (value is not ClassInstance instance)
+            {
+                throw Error($"Type error: expected object of class {className}");
+            }
+
+            if (!IsSubclassOrSame(instance.definition.name, className))
+            {
+                throw Error($"Type error: expected {className} but received {instance.definition.name}");
+            }
+        }
+
+        internal void BindParameter(Scope scope, Param parameter, object value)
+        {
+            if (parameter.className != null)
+            {
+                CheckObject(value, parameter.className, parameter.isArray);
+
+                if (parameter.isArray)
+                {
+                    scope.DefineObjectArray(parameter.name, (List<object>)value, Visibility.PRIVATE, null, parameter.className);
+                }
+                else
+                {
+                    scope.DefineObject(parameter.name, (ClassInstance)value, Visibility.PRIVATE, null, parameter.className);
+                }
+            }
+            else
+            {
+                if (!TypeChecker.CheckType(this, value, parameter.type!.Value, parameter.isArray))
+                {
+                    throw Error($"Parsed argument {value} has the wrong type for parameter " + $"{parameter.name} of type {parameter.type}");
+                }
+
+                scope.Define(parameter.name, new RunTimeVariable(parameter.type.Value, value, true, parameter.isArray));
+            }
+        }
+
+        internal bool TryFindMethod(DefClass start, string name, out DefFunction method, out DefClass owner)
+        {
+            DefClass? current = start;
+
+            while (current != null)
+            {
+                DefFunction? found = current.methods.FirstOrDefault(m => m.name == name);
+
+                if (found != null)
+                {
+                    method = found;
+                    owner = current;
+                    return true;
+                }
+
+                if (current.parentName == null)
+                {
+                    break;
+                }
+
+                current = ResolveClass(current.parentName);
+            }
+
+            method = null!;
+            owner = null!;
+            return false;
+        }
+
+        internal bool TryFindPrimitiveField(DefClass start, string name, out DefineVar field, out DefClass owner)
+        {
+            DefClass? current = start;
+
+            while (current != null)
+            {
+                DefineVar? found = current.fields.FirstOrDefault(f => f.name == name);
+
+                if (found != null)
+                {
+                    field = found;
+                    owner = current;
+                    return true;
+                }
+
+                if (current.parentName == null)
+                {
+                    break;
+                }
+
+                current = ResolveClass(current.parentName);
+            }
+
+            field = null!;
+            owner = null!;
+            return false;
+        }
+
+        internal bool TryFindObjectField(DefClass start, string name, out DefineObject field, out DefClass owner)
+        {
+            DefClass? current = start;
+
+            while (current != null)
+            {
+                DefineObject? found = current.objectFields.FirstOrDefault(f => f.name == name);
+
+                if (found != null)
+                {
+                    field = found;
+                    owner = current;
+                    return true;
+                }
+
+                if (current.parentName == null)
+                {
+                    break;
+                }
+
+                current = ResolveClass(current.parentName);
+            }
+
+            field = null!;
+            owner = null!;
+            return false;
+        }
+
+        private bool SignaturesMatch(DefFunction left, DefFunction right)
+        {
+            if (left.parameters!.Count != right.parameters!.Count)
+            {
+                return false;
+            }
+
+            if (left.return_type != right.return_type)
+            {
+                return false;
+            }
+
+            if (left.returnClassName != right.returnClassName)
+            {
+                return false;
+            }
+
+            if (left.returnIsArray != right.returnIsArray)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.parameters.Count; i++)
+            {
+                Param a = left.parameters[i];
+                Param b = right.parameters[i];
+
+                if (a.type != b.type)
+                {
+                    return false;
+                }
+
+                if (a.className != b.className)
+                {
+                    return false;
+                }
+
+                if (a.isArray != b.isArray)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void InvokeConstructor(ClassInstance instance, DefClass owner, DefConstructor constructor, List<Expression> arguments, Scope callerScope)
         {
             if (arguments.Count != constructor.parameters.Count)
             {
-                throw Error($"Constructor for {instance.definition.name} expected " + $"{constructor.parameters.Count} arguments but received {arguments.Count}");
+                throw Error($"Constructor for {owner.name} expected " + $"{constructor.parameters.Count} arguments but received {arguments.Count}");
             }
 
             Scope scope = instance.fields.CreateChild();
             scope.currentInstance = instance;
+            scope.currentClass = owner;
 
             for (int i = 0; i < constructor.parameters.Count; i++)
             {
@@ -95,29 +372,7 @@ namespace Classes.Runtime
                 Expression argument = arguments[i];
                 object value = evaluator.Evaluate(argument, callerScope);
 
-                if (parameter.className != null)
-                {
-                    if (value is not ClassInstance objectValue)
-                    {
-                        throw Error($"Parameter {parameter.name} expected object of class {parameter.className}");
-                    }
-
-                    if (objectValue.definition.name != parameter.className)
-                    {
-                        throw Error($"Parameter {parameter.name} expected {parameter.className} " + $"but received {objectValue.definition.name}");
-                    }
-
-                    scope.DefineObject(parameter.name, objectValue, Visibility.PRIVATE, null);
-                }
-                else
-                {
-                    if (!TypeChecker.CheckType(this, value, parameter.type!.Value, parameter.isArray))
-                    {
-                        throw Error($"Parsed argument {value} has the wrong type for parameter " + $"{parameter.name} of type {parameter.type}");
-                    }
-
-                    scope.Define(parameter.name, new RunTimeVariable(parameter.type.Value, value, true, parameter.isArray));
-                }
+                BindParameter(scope, parameter, value);
             }
 
             if (instance.definition.ownermodule != null)
@@ -133,7 +388,7 @@ namespace Classes.Runtime
                     {
                         if (result.Flow == ExecFlow.Return)
                         {
-                        throw Error($"Constructor for {instance.definition.name} cannot return a value");
+                        throw Error($"Constructor for {owner.name} cannot return a value");
                     }
 
                     throw FlowError(result.Flow);
@@ -148,27 +403,83 @@ namespace Classes.Runtime
             }
         }
 
-        internal object? InvokeMethod(MethodCall call, Scope callerScope)
+        internal object? InvokeParentConstructor(List<Expression> arguments, Scope callerScope)
         {
-            object target = evaluator.Evaluate(call.target, callerScope);
+            ClassInstance? instance = callerScope.currentInstance;
+            DefClass? currentClass = callerScope.currentClass;
 
-            if (target is not ClassInstance instance)
+            if (instance == null || currentClass == null)
             {
-                throw Error($"Cannot call method {call.methodName} on a non-object value");
+                throw Error("parent can only be used inside a class");
             }
 
-            DefFunction? method = instance.definition.methods.FirstOrDefault(m => m.name == call.methodName);
-
-            if (method == null)
+            if (currentClass.parentName == null)
             {
-                throw Error($"Class {instance.definition.name} has no method {call.methodName}");
+                throw Error($"Class {currentClass.name} has no parent");
+            }
+
+            DefClass parent = ResolveClass(currentClass.parentName);
+
+            if (parent.constructor != null)
+            {
+                InvokeConstructor(instance, parent, parent.constructor, arguments, callerScope);
+            }
+            else if (arguments.Count > 0)
+            {
+                throw Error($"Class {parent.name} has no constructor");
+            }
+
+            return null;
+        }
+
+        internal object? InvokeMethod(MethodCall call, Scope callerScope)
+        {
+            DefClass? startClass = null;
+            ClassInstance? instance = null;
+
+            if (call.target is VarExpression parentTarget && parentTarget.name == "parent")
+            {
+                instance = callerScope.currentInstance;
+                DefClass? currentClass = callerScope.currentClass;
+
+                if (instance == null || currentClass == null)
+                {
+                    throw Error("parent can only be used inside a class");
+                }
+
+                if (currentClass.parentName == null)
+                {
+                    throw Error($"Class {currentClass.name} has no parent");
+                }
+
+                startClass = ResolveClass(currentClass.parentName);
+            }
+            else
+            {
+                object target = evaluator.Evaluate(call.target, callerScope);
+
+                if (target is not ClassInstance evaluated)
+                {
+                    throw Error($"Cannot call method {call.methodName} on a non-object value");
+                }
+
+                instance = evaluated;
+                startClass = instance.definition;
+            }
+
+            if (!TryFindMethod(startClass, call.methodName, out DefFunction method, out DefClass owner))
+            {
+                throw Error($"Class {startClass.name} has no method {call.methodName}");
+            }
+
+            if (method.isAbstract)
+            {
+                throw Error($"Cannot call abstract method {call.methodName}");
             }
 
             if (method.visibility == Visibility.PRIVATE)
             {
-                ClassInstance? callerInstance = callerScope.currentInstance;
-
-                if (callerInstance == null || callerInstance.definition != instance.definition)
+                if (callerScope.currentClass == null || callerScope.currentClass != owner)
                 {
                     throw Error($"Method {call.methodName} is private");
                 }
@@ -182,6 +493,7 @@ namespace Classes.Runtime
             Scope scope = instance.fields.CreateChild();
 
             scope.currentInstance = instance;
+            scope.currentClass = owner;
 
             for (int i = 0; i < method.parameters.Count; i++)
             {
@@ -190,29 +502,7 @@ namespace Classes.Runtime
 
                 object value = evaluator.Evaluate(argument, callerScope);
 
-                if (parameter.className != null)
-                {
-                    if (value is not ClassInstance objectValue)
-                    {
-                        throw Error($"Parameter {parameter.name} expected object " + $"of class {parameter.className}");
-                    }
-
-                    if (objectValue.definition.name != parameter.className)
-                    {
-                        throw Error($"Parameter {parameter.name} expected " + $"{parameter.className} but received " + $"{objectValue.definition.name}");
-                    }
-
-                    scope.DefineObject(parameter.name, objectValue, Visibility.PRIVATE, null);
-                }
-                else
-                {
-                    if (!TypeChecker.CheckType(this, value, parameter.type!.Value, parameter.isArray))
-                    {
-                        throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {parameter.name} of type {parameter.type}");
-                    }
-
-                    scope.Define(parameter.name, new RunTimeVariable(parameter.type.Value, value, true, parameter.isArray));
-                }
+                BindParameter(scope, parameter, value);
             }
 
             if (instance.definition.ownermodule != null)
@@ -250,15 +540,12 @@ namespace Classes.Runtime
             {
                 if (method.returnClassName != null)
                 {
-                    if (result.Value is not ClassInstance objectValue)
+                    if (result.Value is null)
                     {
-                        throw Error($"Method {method.name} expected return type " + $"{method.returnClassName}");
+                        throw Error($"Method {method.name} expected return type " + $"{method.returnClassName}" + $"{(method.returnIsArray ? "[]" : "")}");
                     }
 
-                    if (objectValue.definition.name != method.returnClassName)
-                    {
-                        throw Error($"Method {method.name} expected return type " + $"{method.returnClassName} but returned " + $"{objectValue.definition.name}");
-                    }
+                    CheckObject(result.Value, method.returnClassName, method.returnIsArray);
                 }
                 else if (method.return_type is not null)
                 {
@@ -281,12 +568,50 @@ namespace Classes.Runtime
             throw FlowError(result.Flow);
         }
 
+        private void InitClassMembers(DefClass definition, ClassInstance instance)
+        {
+            if (definition.parentName != null)
+            {
+                InitClassMembers(ResolveClass(definition.parentName), instance);
+            }
+
+            instance.fields.currentClass = definition;
+            instance.fields.currentInstance = instance;
+
+            foreach (DefineVar field in definition.fields)
+            {
+                ExecResult? result = executor.Execute(new List<Statement> { field }, instance.fields);
+
+                if (result != null)
+                {
+                    throw FlowError(result.Flow);
+                }
+            }
+
+            foreach (DefineObject field in definition.objectFields)
+            {
+                ExecResult? result = executor.Execute(new List<Statement> { field }, instance.fields);
+
+                if (result != null)
+                {
+                    throw FlowError(result.Flow);
+                }
+            }
+        }
+
         internal ClassInstance InstantiateClass(string className, List<Expression> arguments, Scope callerScope)
         {
             DefClass definition = ResolveClass(className);
+
+            if (definition.isAbstract)
+            {
+                throw Error($"Cannot create an instance of abstract class {className}");
+            }
+
             Scope fieldScope = globals.CreateChild();
             ClassInstance instance = new ClassInstance(definition, fieldScope);
             fieldScope.currentInstance = instance;
+            fieldScope.currentClass = definition;
 
             if (definition.ownermodule != null)
             {
@@ -295,31 +620,7 @@ namespace Classes.Runtime
 
             try
             {
-                foreach (DefineVar field in definition.fields)
-                {
-                    ExecResult? result = executor.Execute(new List<Statement> { field }, fieldScope);
-
-                    if (result != null)
-                    {
-                        throw FlowError(result.Flow);
-                    }
-                }
-                foreach (DefineObject field in definition.objectFields)
-                {
-                    object value = evaluator.Evaluate(field.value, instance.fields);
-
-                    if (value is not ClassInstance objectValue)
-                    {
-                        throw Error($"Expected object of class {field.className}");
-                    }
-
-                    if (objectValue.definition.name != field.className)
-                    {
-                        throw Error($"Expected object of class {field.className} " + $"but received {objectValue.definition.name}");
-                    }
-
-                    instance.fields.DefineObject(field.name, objectValue, field.visibility, definition.ownermodule);
-                }
+                InitClassMembers(definition, instance);
             }
             finally
             {
@@ -331,7 +632,7 @@ namespace Classes.Runtime
 
             if (definition.constructor != null)
             {
-                InvokeConstructor(instance, definition.constructor, arguments, callerScope);
+                InvokeConstructor(instance, definition, definition.constructor, arguments, callerScope);
             }
             else if (arguments.Count > 0)
             {
@@ -357,6 +658,86 @@ namespace Classes.Runtime
                 if (method.visibility == null)
                 {
                     method.visibility = Visibility.PRIVATE;
+                }
+
+                if (method.isAbstract && !classDefined.isAbstract)
+                {
+                    throw Error($"Abstract method {method.name} can only be declared in an abstract class");
+                }
+
+                if (method.isOverride && classDefined.parentName == null)
+                {
+                    throw Error($"Method {method.name} uses override but class {classDefined.name} has no parent");
+                }
+            }
+
+            if (classDefined.parentName != null)
+            {
+                if (classDefined.parentName == classDefined.name)
+                {
+                    throw Error($"Class {classDefined.name} cannot extend itself");
+                }
+
+                DefClass parent = ResolveClass(classDefined.parentName);
+
+                foreach (DefFunction method in classDefined.methods)
+                {
+                    bool parentHasMethod = TryFindMethod(parent, method.name, out DefFunction parentMethod, out DefClass parentOwner);
+
+                    if (method.isOverride)
+                    {
+                        if (!parentHasMethod)
+                        {
+                            throw Error($"Method {method.name} has no method to override");
+                        }
+
+                        if (parentMethod.visibility == Visibility.PRIVATE)
+                        {
+                            throw Error($"Method {method.name} cannot override a private method");
+                        }
+
+                        if (!SignaturesMatch(method, parentMethod))
+                        {
+                            throw Error($"Method {method.name} does not match the overridden method");
+                        }
+                    }
+                    else if (parentHasMethod && parentMethod.visibility != Visibility.PRIVATE)
+                    {
+                        throw Error($"Method {method.name} hides a parent method and must use override");
+                    }
+                }
+
+                if (!classDefined.isAbstract)
+                {
+                    DefClass? walk = parent;
+
+                    while (walk != null)
+                    {
+                        foreach (DefFunction parentMethod in walk.methods)
+                        {
+                            if (!parentMethod.isAbstract)
+                            {
+                                continue;
+                            }
+
+                            if (!TryFindMethod(classDefined, parentMethod.name, out DefFunction resolved, out DefClass resolvedOwner))
+                            {
+                                throw Error($"Class {classDefined.name} does not override abstract method {parentMethod.name}");
+                            }
+
+                            if (resolved.isAbstract)
+                            {
+                                throw Error($"Class {classDefined.name} does not override abstract method {parentMethod.name}");
+                            }
+                        }
+
+                        if (walk.parentName == null)
+                        {
+                            break;
+                        }
+
+                        walk = ResolveClass(walk.parentName);
+                    }
                 }
             }
 
@@ -473,29 +854,7 @@ namespace Classes.Runtime
                     Expression arg = call.arguments[i];
                     object value = evaluator.Evaluate(arg, callerScope);
 
-                    if (p.className != null)
-                    {
-                        if (value is not ClassInstance objectValue)
-                        {
-                            throw Error($"Parameter {p.name} expected object of class {p.className}");
-                        }
-
-                        if (objectValue.definition.name != p.className)
-                        {
-                            throw Error($"Parameter {p.name} expected {p.className} " + $"but received {objectValue.definition.name}");
-                        }
-
-                        scope.DefineObject(p.name, objectValue, Visibility.PRIVATE, null);
-                    }
-                    else
-                    {
-                        if (!TypeChecker.CheckType(this, value, p.type!.Value, p.isArray))
-                        {
-                            throw Error($"Parsed argument {value} has the wrong type " + $"for parameter {p.name} of type {p.type}");
-                        }
-
-                        scope.Define(p.name, new RunTimeVariable(p.type.Value, value, true, p.isArray));
-                    }
+                    BindParameter(scope, p, value);
                 }
 
                 if (function.ownermodule != null)
@@ -533,15 +892,12 @@ namespace Classes.Runtime
                 {
                     if (function.returnClassName != null)
                     {
-                        if (result.Value is not ClassInstance objectValue)
+                        if (result.Value is null)
                         {
-                            throw Error($"Function {function.name} expected return type " + $"{function.returnClassName}");
+                            throw Error($"Function {function.name} expected return type " + $"{function.returnClassName}" + $"{(function.returnIsArray ? "[]" : "")}");
                         }
 
-                        if (objectValue.definition.name != function.returnClassName)
-                        {
-                            throw Error($"Function {function.name} expected return type " + $"{function.returnClassName} but returned " + $"{objectValue.definition.name}");
-                        }
+                        CheckObject(result.Value, function.returnClassName, function.returnIsArray);
                     }
                     else if (function.return_type is not null)
                     {

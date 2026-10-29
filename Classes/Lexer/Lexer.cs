@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -63,6 +63,7 @@ namespace Classes.Lexer
             ["within"] = Type.WITHIN,
             ["mod"] = Type.MODULO,
             ["import"] = Type.IMPORT,
+            ["including"] = Type.INCLUDING,
             ["public"] = Type.PUBLIC,
             ["private"] = Type.PRIVATE,
             ["returning"] = Type.RETURN_TYPE,
@@ -70,6 +71,15 @@ namespace Classes.Lexer
             ["constructor"] = Type.CONSTRUCTOR,
             ["newobj"] = Type.NEWOBJ,
             ["self"] = Type.SELF,
+            ["extends"] = Type.EXTENDS,
+            ["override"] = Type.OVERRIDE,
+            ["parent"] = Type.PARENT,
+            ["isa"] = Type.ISA,
+            ["abstract"] = Type.ABSTRACT,
+            ["try"] = Type.TRY,
+            ["catch"] = Type.CATCH,
+            ["throw"] = Type.THROW,
+            ["finally"] = Type.FINALLY,
         };
         private string source { get; }
         private int pos = 0;

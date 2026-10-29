@@ -1,4 +1,4 @@
-﻿using Classes.AST.Expressions;
+using Classes.AST.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,13 +13,15 @@ namespace Classes.AST
         public string className;
         public string name;
         public Expression value;
+        public bool isArray;
 
-        public DefineObject(Visibility visibility, string className, string name, Expression value)
+        public DefineObject(Visibility visibility, string className, string name, Expression value, bool isArray = false)
         {
             this.visibility = visibility;
             this.className = className;
             this.name = name;
             this.value = value;
+            this.isArray = isArray;
         }
     }
 }

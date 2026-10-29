@@ -36,7 +36,7 @@ export interface SymbolInfo {
 }
 
 export interface BlockInfo {
-  kind: "if" | "while" | "for" | "forevery" | "func" | "class" | "constructor";
+  kind: "if" | "while" | "for" | "forevery" | "func" | "class" | "constructor" | "try" | "catch" | "finally";
   startLine: number;
   startCol: number;
   endLine: number;
@@ -49,6 +49,7 @@ export interface ImportInfo {
   line: number;
   col: number;
   length: number;
+  kind?: "import" | "including";
 }
 
 export interface AnalyzeDiagnostic {
@@ -216,7 +217,7 @@ export function analyze(source: string): Analysis {
       continue;
     }
 
-    if (tok.kind === "IMPORT") {
+    if (tok.kind === "IMPORT" || tok.kind === "INCLUDING") {
       const strTok = is(tokens, i + 1, "OPENCLOSESTR") ? at(tokens, i + 2) : undefined;
       if (strTok && strTok.kind === "STRING" && strTok.value !== undefined) {
         imports.push({
@@ -224,6 +225,7 @@ export function analyze(source: string): Analysis {
           line: strTok.line,
           col: strTok.col,
           length: strTok.text.length,
+          kind: tok.kind === "INCLUDING" ? "including" : "import",
         });
       }
       i++;
@@ -264,10 +266,38 @@ export function analyze(source: string): Analysis {
       continue;
     }
 
-    if (tok.kind === "DEFINE" && is(tokens, i + 1, "DEFFUNC")) {
-      const nameTok = at(tokens, i + 2);
+    if (tok.kind === "TRY") {
+      pushBlock("try", tok);
+      i++;
+      continue;
+    }
+
+    if (tok.kind === "CATCH") {
+      pushBlock("catch", tok);
+      i++;
+      continue;
+    }
+
+    if (tok.kind === "FINALLY") {
+      pushBlock("finally", tok);
+      i++;
+      continue;
+    }
+
+    const funcKeyword =
+      tok.kind === "DEFINE" && is(tokens, i + 1, "DEFFUNC")
+        ? i + 1
+        : tok.kind === "DEFINE" &&
+            (is(tokens, i + 1, "OVERRIDE") || is(tokens, i + 1, "ABSTRACT")) &&
+            is(tokens, i + 2, "DEFFUNC")
+          ? i + 2
+          : -1;
+
+    if (funcKeyword >= 0) {
+      const isAbstract = is(tokens, i + 1, "ABSTRACT");
+      const nameTok = at(tokens, funcKeyword + 1);
       const name = nameTok?.kind === "VAR" ? (nameTok.value ?? nameTok.text) : "func";
-      const parsed = parseParams(tokens, nameTok?.kind === "VAR" ? i + 3 : i + 2);
+      const parsed = parseParams(tokens, nameTok?.kind === "VAR" ? funcKeyword + 2 : funcKeyword + 1);
       const ret = parseReturnType(tokens, parsed.next);
       const method = inClass();
       const symbol: SymbolInfo = {
@@ -311,13 +341,22 @@ export function analyze(source: string): Analysis {
       } else {
         seenFunctions.set(key, symbol);
       }
-      pushBlock("func", tok, name);
+      if (!isAbstract) {
+        pushBlock("func", tok, name);
+      }
       i = ret.next;
       continue;
     }
 
-    if (tok.kind === "DEFINE" && is(tokens, i + 1, "CLASS")) {
-      const nameTok = at(tokens, i + 2);
+    const classKeyword =
+      tok.kind === "DEFINE" && is(tokens, i + 1, "CLASS")
+        ? i + 1
+        : tok.kind === "DEFINE" && is(tokens, i + 1, "ABSTRACT") && is(tokens, i + 2, "CLASS")
+          ? i + 2
+          : -1;
+
+    if (classKeyword >= 0) {
+      const nameTok = at(tokens, classKeyword + 1);
       const name = nameTok?.kind === "VAR" ? (nameTok.value ?? nameTok.text) : "class";
       const symbol: SymbolInfo = {
         kind: "class",
@@ -345,7 +384,11 @@ export function analyze(source: string): Analysis {
       }
       currentClass = name;
       pushBlock("class", tok, name);
-      i += nameTok?.kind === "VAR" ? 3 : 2;
+      let next = nameTok?.kind === "VAR" ? classKeyword + 2 : classKeyword + 1;
+      if (is(tokens, next, "EXTENDS") && is(tokens, next + 1, "VAR")) {
+        next += 2;
+      }
+      i = next;
       continue;
     }
 
@@ -404,6 +447,25 @@ export function analyze(source: string): Analysis {
         i = array.next + 1;
         continue;
       }
+    }
+
+    if (tok.kind === "DEFINE" && is(tokens, i + 1, "VAR") && is(tokens, i + 2, "OPENARRAY") && is(tokens, i + 3, "CLOSEARRAY") && is(tokens, i + 4, "VAR")) {
+      const classTok = at(tokens, i + 1)!;
+      const nameTok = at(tokens, i + 4)!;
+      symbols.push({
+        kind: inClass() && stack[stack.length - 1]?.kind === "class" ? "field" : "variable",
+        name: nameTok.value ?? nameTok.text,
+        type: (classTok.value ?? classTok.text) + "[]",
+        isArray: true,
+        visibility,
+        line: nameTok.line,
+        col: nameTok.col,
+        endLine: nameTok.line,
+        endCol: tokenEndCol(nameTok),
+        container: currentContainer(),
+      });
+      i += 5;
+      continue;
     }
 
     if (tok.kind === "DEFINE" && is(tokens, i + 1, "VAR") && is(tokens, i + 2, "VAR")) {

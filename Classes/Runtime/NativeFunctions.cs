@@ -1,4 +1,4 @@
-﻿using Classes.AST;
+using Classes.AST;
 using Classes.AST.Expressions;
 using System;
 using System.Collections.Generic;
@@ -54,6 +54,22 @@ namespace Classes.Runtime
                     {
                         return true;
                     }
+                case string value when value == "__error_message":
+                    {
+                        return true;
+                    }
+                case string value when value == "__error_line":
+                    {
+                        return true;
+                    }
+                case string value when value == "__error_col":
+                    {
+                        return true;
+                    }
+                case string value when value == "__error_source":
+                    {
+                        return true;
+                    }
                 default:
                     {
                         return false;
@@ -89,11 +105,37 @@ namespace Classes.Runtime
                     {
                         return JsonSerialize(args, callerScope);
                     }
+                case string value when value == "__error_message":
+                    {
+                        return ErrorInfo(args, "message", "__error_message");
+                    }
+                case string value when value == "__error_line":
+                    {
+                        return ErrorInfo(args, "line", "__error_line");
+                    }
+                case string value when value == "__error_col":
+                    {
+                        return ErrorInfo(args, "col", "__error_col");
+                    }
+                case string value when value == "__error_source":
+                    {
+                        return ErrorInfo(args, "source", "__error_source");
+                    }
                 default:
                     {
                         throw runtime.Error($"Unknown native function {name}");
                     }
             }
+        }
+
+        private object ErrorInfo(List<Expression> args, string kind, string functionName)
+        {
+            if (args.Count != 0)
+            {
+                throw runtime.Error($"{functionName} expected 0 arguments");
+            }
+
+            return runtime.CaughtOrCurrent(kind);
         }
 
         private object JsonSerialize(List<Expression> args, Scope callerScope)
@@ -151,23 +193,28 @@ namespace Classes.Runtime
 
                 foreach(KeyValuePair<string, RunTimeVariable> kvp in variables)
                 {
-                    DefineVar? definition = classInstance.definition.fields.FirstOrDefault(f => f.name == kvp.Key);
-                    if (definition?.visibility == Visibility.PUBLIC)
+                    if (runtime.TryFindPrimitiveField(classInstance.definition, kvp.Key, out DefineVar definition, out DefClass owner))
                     {
-                        if (!kvp.Value.isInitialized)
+                        if (definition.visibility == Visibility.PUBLIC)
                         {
-                            throw runtime.Error($"Cannot serialize uninitialized field {kvp.Key}");
+                            if (!kvp.Value.isInitialized)
+                            {
+                                throw runtime.Error($"Cannot serialize uninitialized field {kvp.Key}");
+                            }
+                            fields.Add(kvp.Key, ConvertToJsonValue(kvp.Value.value, visited));
                         }
-                        fields.Add(kvp.Key, ConvertToJsonValue(kvp.Value.value, visited));
                     }
                 }
 
                 foreach(KeyValuePair<string, RunTimeObject> kvp in objects)
                 {
-                    DefineObject? definition = classInstance.definition.objectFields.FirstOrDefault(f => f.name == kvp.Key);
-                    if (definition?.visibility == Visibility.PUBLIC)
+                    if (runtime.TryFindObjectField(classInstance.definition, kvp.Key, out DefineObject definition, out DefClass owner))
                     {
-                        fields.Add(kvp.Key, ConvertToJsonValue(kvp.Value.instance, visited));
+                        if (definition.visibility == Visibility.PUBLIC)
+                        {
+                            object? objectValue = definition.isArray ? kvp.Value.array : kvp.Value.instance;
+                            fields.Add(kvp.Key, ConvertToJsonValue(objectValue, visited));
+                        }
                     }
                 }
 

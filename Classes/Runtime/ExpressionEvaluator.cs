@@ -54,9 +54,18 @@ namespace Classes.Runtime
                     throw runtime.Error($"Cannot access field {fieldAccess.fieldName} on a non-object value");
                 }
 
-                DefineVar? primitiveDefinition = instance.definition.fields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+                DefClass? fieldOwner = null;
+                DefineVar? primitiveDefinition = null;
+                DefineObject? objectDefinition = null;
 
-                DefineObject? objectDefinition = instance.definition.objectFields.FirstOrDefault(f => f.name == fieldAccess.fieldName);
+                if (runtime.TryFindPrimitiveField(instance.definition, fieldAccess.fieldName, out primitiveDefinition, out DefClass primitiveOwner))
+                {
+                    fieldOwner = primitiveOwner;
+                }
+                else if (runtime.TryFindObjectField(instance.definition, fieldAccess.fieldName, out objectDefinition, out DefClass objectOwner))
+                {
+                    fieldOwner = objectOwner;
+                }
 
                 if (primitiveDefinition == null && objectDefinition == null)
                 {
@@ -67,9 +76,7 @@ namespace Classes.Runtime
 
                 if (visibility == Visibility.PRIVATE)
                 {
-                    ClassInstance? callerInstance = scope.currentInstance;
-
-                    if (callerInstance == null || callerInstance.definition != instance.definition)
+                    if (scope.currentClass == null || scope.currentClass != fieldOwner)
                     {
                         throw runtime.Error($"Field {fieldAccess.fieldName} is private");
                     }
@@ -87,8 +94,7 @@ namespace Classes.Runtime
                     return field.value!;
                 }
 
-                ClassInstance objectField = instance.fields.GetObjectLocal(fieldAccess.fieldName);
-                return objectField;
+                return instance.fields.GetObjectValueLocal(fieldAccess.fieldName);
             }
 
             if (expression is ArrayExpression array)
@@ -111,6 +117,23 @@ namespace Classes.Runtime
             if (expression is MethodCall methodCall)
             {
                 return runtime.InvokeMethod(methodCall, scope);
+            }
+
+            if (expression is ParentConstructorCall parentConstructor)
+            {
+                return runtime.InvokeParentConstructor(parentConstructor.arguments, scope)!;
+            }
+
+            if (expression is IsAExpression isa)
+            {
+                object value = Evaluate(isa.value, scope);
+
+                if (value is not ClassInstance instance)
+                {
+                    return false;
+                }
+
+                return runtime.IsSubclassOrSame(instance.definition.name, isa.className);
             }
 
             if (expression is StringExpression str)
@@ -157,10 +180,13 @@ namespace Classes.Runtime
                     throw runtime.Error("self can only be used inside a class");
                 }
 
-                DefineVar? primitiveDefinition = instance.definition.fields.FirstOrDefault(f => f.name == selfField.fieldName);
-
-                if (primitiveDefinition != null)
+                if (runtime.TryFindPrimitiveField(instance.definition, selfField.fieldName, out DefineVar primitiveDefinition, out DefClass primitiveOwner))
                 {
+                    if (primitiveDefinition.visibility == Visibility.PRIVATE && (scope.currentClass == null || scope.currentClass != primitiveOwner))
+                    {
+                        throw runtime.Error($"Field {selfField.fieldName} is private");
+                    }
+
                     RunTimeVariable field = instance.fields.GetLocal(selfField.fieldName);
 
                     if (!field.isInitialized)
@@ -171,11 +197,14 @@ namespace Classes.Runtime
                     return field.value!;
                 }
 
-                DefineObject? objectDefinition = instance.definition.objectFields.FirstOrDefault(f => f.name == selfField.fieldName);
-
-                if (objectDefinition != null)
+                if (runtime.TryFindObjectField(instance.definition, selfField.fieldName, out DefineObject objectDefinition, out DefClass objectOwner))
                 {
-                    return instance.fields.GetObjectLocal(selfField.fieldName);
+                    if (objectDefinition.visibility == Visibility.PRIVATE && (scope.currentClass == null || scope.currentClass != objectOwner))
+                    {
+                        throw runtime.Error($"Field {selfField.fieldName} is private");
+                    }
+
+                    return instance.fields.GetObjectValueLocal(selfField.fieldName);
                 }
 
                 throw runtime.Error($"Class {instance.definition.name} has no field {selfField.fieldName}");
@@ -200,11 +229,21 @@ namespace Classes.Runtime
                     return primitive.value!;
                 }
 
-                ClassInstance? instance = scope.FindObject(variable.name);
+                RunTimeObject? binding = scope.FindObjectBinding(variable.name);
 
-                if (instance != null)
+                if (binding != null)
                 {
-                    return instance;
+                    if (!binding.isInitialized)
+                    {
+                        throw runtime.Error($"Object {variable.name} is not initialized");
+                    }
+
+                    if (binding.isArray)
+                    {
+                        return binding.array!;
+                    }
+
+                    return binding.instance!;
                 }
 
                 throw runtime.Error($"Variable or object {variable.name} can't be found");

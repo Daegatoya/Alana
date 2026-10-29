@@ -28,10 +28,53 @@ namespace Classes.Runtime
         {
             string currentDirectory = Path.GetDirectoryName(CurrentFile)!;
             string fullPath = Path.GetFullPath(Path.Combine(currentDirectory, path));
+            LoadFile(fullPath, "Imported");
+        }
 
+        public void Include(string path)
+        {
+            string root = InstallRoot();
+            string fullPath = Path.GetFullPath(Path.Combine(root, path));
+            string rootPrefix = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+            if (!fullPath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase) && !string.Equals(fullPath, Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase))
+            {
+                throw runtime.Error($"Included file is outside the Alana folder: {path}");
+            }
+
+            LoadFile(fullPath, "Included");
+        }
+
+        public static string InstallRoot()
+        {
+            string? env = Environment.GetEnvironmentVariable("ALANA_HOME");
+
+            if (!string.IsNullOrWhiteSpace(env) && Directory.Exists(env))
+            {
+                return Path.GetFullPath(env);
+            }
+
+            string baseDir = AppContext.BaseDirectory;
+            string parent = Path.GetFullPath(Path.Combine(baseDir, ".."));
+
+            if (Directory.Exists(Path.Combine(parent, "stdlib")))
+            {
+                return parent;
+            }
+
+            if (Directory.Exists(Path.Combine(baseDir, "stdlib")))
+            {
+                return baseDir;
+            }
+
+            return parent;
+        }
+
+        private void LoadFile(string fullPath, string kind)
+        {
             if (!File.Exists(fullPath))
             {
-                throw runtime.Error($"Imported file not found: {fullPath}");
+                throw runtime.Error($"{kind} file not found: {fullPath}");
             }
 
             if (loaded.Contains(fullPath))
