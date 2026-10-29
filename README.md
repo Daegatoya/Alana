@@ -135,7 +135,7 @@ Good question! Here is a little list showing you all implemented features so far
 - [ ] Improved strings
 - [ ] Expended stdlib
 - [ ] Packages ecosystem
-- [ ] Making you a sandwich (I already said I wouldn't add this feature.)
+- [ ] Making you a sandwich (This is just getting old at this point)
 
 </details>
 
