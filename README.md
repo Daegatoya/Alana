@@ -776,4 +776,4 @@ The Alana name, logo, wordmark, and other branding assets are not licensed under
 Permission is granted to use the Alana name and logo only when referring to
 the official Alana project. Modified versions or forks must not use the Alana s lename or logo in a way that implies endorsement or official status.
 
-> Copyright © Daegatoya - 2026 | Alana v2.0
+> Copyright © Daegatoya — 2026 | Alana v2.0
