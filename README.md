@@ -767,8 +767,13 @@ And, of course, Alana will probably keep evolving as I come up with more ideas.
 
 <hr>
 
-I hope this little project found your heart, and I will keep you guys updated! Thank you for following my work!
+## Legals
 
-*And don't forget to ⭐ the repo!*
+Alana source code is licensed under the GNU General Public License v3.0.
+
+The Alana name, logo, wordmark, and other branding assets are not licensed under the GPLv3 and remain copyrighted.
+
+Permission is granted to use the Alana name and logo only when referring to
+the official Alana project. Modified versions or forks must not use the Alana s lename or logo in a way that implies endorsement or official status.
 
 > Copyright © Daegatoya - 2026 | Alana v2.0
